@@ -42,11 +42,6 @@ struct ClearDepth {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glClearDepth(value));
     }
-    inline static Type Get() {
-        Type clearDepth;
-        MBGL_CHECK_ERROR(glGetFloatv(GL_DEPTH_CLEAR_VALUE, &clearDepth));
-        return clearDepth;
-    }
 };
 
 struct ClearColor {
@@ -54,11 +49,6 @@ struct ClearColor {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glClearColor(value.r, value.g, value.b, value.a));
-    }
-    inline static Type Get() {
-        GLfloat floats[4];
-        MBGL_CHECK_ERROR(glGetFloatv(GL_COLOR_CLEAR_VALUE, floats));
-        return { floats[0], floats[1], floats[2], floats[3] };
     }
 };
 
@@ -72,11 +62,6 @@ struct ClearStencil {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glClearStencil(value));
     }
-    inline static Type Get() {
-        Type clearStencil;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_CLEAR_VALUE, &clearStencil));
-        return clearStencil;
-    }
 };
 
 struct StencilMask {
@@ -84,11 +69,6 @@ struct StencilMask {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glStencilMask(value));
-    }
-    inline static Type Get() {
-        GLint stencilMask;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_WRITEMASK, &stencilMask));
-        return stencilMask;
     }
 };
 
@@ -98,11 +78,6 @@ struct DepthMask {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glDepthMask(value));
     }
-    inline static Type Get() {
-        Type depthMask;
-        MBGL_CHECK_ERROR(glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask));
-        return depthMask;
-    }
 };
 
 struct ColorMask {
@@ -110,12 +85,6 @@ struct ColorMask {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glColorMask(value.r, value.g, value.b, value.a));
-    }
-    inline static Type Get() {
-        GLboolean bools[4];
-        MBGL_CHECK_ERROR(glGetBooleanv(GL_COLOR_WRITEMASK, bools));
-        return { static_cast<bool>(bools[0]), static_cast<bool>(bools[1]),
-                 static_cast<bool>(bools[2]), static_cast<bool>(bools[3]) };
     }
 };
 
@@ -129,13 +98,6 @@ struct StencilFunc {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glStencilFunc(value.func, value.ref, value.mask));
     }
-    inline static Type Get() {
-        GLint func, ref, mask;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_FUNC, &func));
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_REF, &ref));
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_VALUE_MASK, &mask));
-        return { static_cast<GLenum>(func), ref, static_cast<GLuint>(mask) };
-    }
 };
 
 inline bool operator!=(const StencilFunc::Type& a, const StencilFunc::Type& b) {
@@ -148,11 +110,6 @@ struct StencilTest {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(value ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST));
     }
-    inline static Type Get() {
-        Type stencilTest;
-        MBGL_CHECK_ERROR(stencilTest = glIsEnabled(GL_STENCIL_TEST));
-        return stencilTest;
-    }
 };
 
 struct StencilOp {
@@ -161,13 +118,6 @@ struct StencilOp {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glStencilOp(value.sfail, value.dpfail, value.dppass));
     }
-    inline static Type Get() {
-        GLint sfail, dpfail, dppass;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_FAIL, &sfail));
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_PASS_DEPTH_FAIL, &dpfail));
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_STENCIL_PASS_DEPTH_PASS, &dppass));
-        return { static_cast<GLenum>(sfail), static_cast<GLenum>(dpfail), static_cast<GLuint>(dppass) };
-    }
 };
 
 struct DepthRange {
@@ -175,11 +125,6 @@ struct DepthRange {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glDepthRange(value.near, value.far));
-    }
-    inline static Type Get() {
-        GLfloat floats[2];
-        MBGL_CHECK_ERROR(glGetFloatv(GL_DEPTH_RANGE, floats));
-        return { floats[0], floats[1] };
     }
 };
 
@@ -193,11 +138,6 @@ struct DepthTest {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(value ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST));
     }
-    inline static Type Get() {
-        Type depthTest;
-        MBGL_CHECK_ERROR(depthTest = glIsEnabled(GL_DEPTH_TEST));
-        return depthTest;
-    }
 };
 
 struct DepthFunc {
@@ -205,11 +145,6 @@ struct DepthFunc {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glDepthFunc(value));
-    }
-    inline static Type Get() {
-        GLint depthFunc;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_DEPTH_FUNC, &depthFunc));
-        return depthFunc;
     }
 };
 
@@ -219,11 +154,6 @@ struct Blend {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(value ? glEnable(GL_BLEND) : glDisable(GL_BLEND));
     }
-    inline static Type Get() {
-        Type blend;
-        MBGL_CHECK_ERROR(blend = glIsEnabled(GL_BLEND));
-        return blend;
-    }
 };
 
 struct BlendFunc {
@@ -231,12 +161,6 @@ struct BlendFunc {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glBlendFunc(value.sfactor, value.dfactor));
-    }
-    inline static Type Get() {
-        GLint sfactor, dfactor;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_BLEND_SRC_ALPHA, &sfactor));
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_BLEND_DST_ALPHA, &dfactor));
-        return { static_cast<GLenum>(sfactor), static_cast<GLenum>(dfactor) };
     }
 };
 
@@ -246,11 +170,6 @@ struct Program {
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glUseProgram(value));
     }
-    inline static Type Get() {
-        GLint program;
-        MBGL_CHECK_ERROR(glGetIntegerv(GL_CURRENT_PROGRAM, &program));
-        return program;
-    }
 };
 
 struct LineWidth {
@@ -258,11 +177,6 @@ struct LineWidth {
     static const Type Default;
     inline static void Set(const Type& value) {
         MBGL_CHECK_ERROR(glLineWidth(value));
-    }
-    inline static Type Get() {
-        Type lineWidth;
-        MBGL_CHECK_ERROR(glGetFloatv(GL_LINE_WIDTH, &lineWidth));
-        return lineWidth;
     }
 };
 
