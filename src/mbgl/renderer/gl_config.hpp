@@ -22,9 +22,7 @@ public:
     }
 
     inline void reset() {
-        dirty = true;
-        current = T::Default;
-        T::Set(current);
+        operator=(T::Default);
     }
 
     inline void setDirty() {
@@ -120,6 +118,10 @@ struct StencilOp {
     }
 };
 
+inline bool operator!=(const StencilOp::Type& a, const StencilOp::Type& b) {
+    return a.sfail != b.sfail || a.dpfail != b.dpfail || a.dppass != b.dppass;
+}
+
 struct DepthRange {
     struct Type { GLfloat near, far; };
     static const Type Default;
@@ -163,6 +165,10 @@ struct BlendFunc {
         MBGL_CHECK_ERROR(glBlendFunc(value.sfactor, value.dfactor));
     }
 };
+
+inline bool operator!=(const BlendFunc::Type& a, const BlendFunc::Type& b) {
+    return a.sfactor != b.sfactor || a.dfactor != b.dfactor;
+}
 
 struct Program {
     using Type = GLuint;
