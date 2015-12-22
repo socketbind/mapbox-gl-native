@@ -14,13 +14,13 @@ TEST_F(Storage, CacheResponse) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/cache" };
+    std::string url = "http://127.0.0.1:3000/cache";
     Response response;
 
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<FileRequest> req2;
 
-    req1 = fs.request(resource, [&](Response res) {
+    req1 = fs.requestStyle(url, [&](Response res) {
         req1.reset();
         EXPECT_EQ(nullptr, res.error);
         EXPECT_EQ(false, res.stale);
@@ -33,7 +33,7 @@ TEST_F(Storage, CacheResponse) {
 
         // Now test that we get the same values as in the previous request. If we'd go to the server
         // again, we'd get different values.
-        req2 = fs.request(resource, [&](Response res2) {
+        req2 = fs.requestStyle(url, [&](Response res2) {
             req2.reset();
             EXPECT_EQ(response.error, res2.error);
             EXPECT_EQ(response.stale, res2.stale);
@@ -61,12 +61,12 @@ TEST_F(Storage, CacheNotFound) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource resource{ Resource::Unknown, "http://127.0.0.1:3000/not-found" };
+    const std::string url = "http://127.0.0.1:3000/not-found";
 
     // Insert existing data into the cache that will be marked as stale.
     auto response = std::make_shared<Response>();
     response->data = std::make_shared<const std::string>("existing data");
-    cache.put(resource, response, FileCache::Hint::Full);
+    cache.put(url, response, FileCache::Hint::Full);
 
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<WorkRequest> req2;
@@ -75,7 +75,7 @@ TEST_F(Storage, CacheNotFound) {
 
     // Then, request the actual URL and check that we're getting the rigged cache response first,
     // then the connection error message.
-    req1 = fs.request(resource, [&](Response res) {
+    req1 = fs.requestStyle(url, [&](Response res) {
         if (counter == 0) {
             EXPECT_EQ(nullptr, res.error);
             EXPECT_EQ(true, res.stale);
@@ -92,7 +92,7 @@ TEST_F(Storage, CacheNotFound) {
             req1.reset();
 
             // Finally, check the cache to make sure we cached the 404 response.
-            req2 = cache.get(resource, [&](std::unique_ptr<Response> res2) {
+            req2 = cache.get(url, [&](std::unique_ptr<Response> res2) {
                 EXPECT_NE(nullptr, res2->error);
                 EXPECT_EQ(Response::Error::Reason::NotFound, res2->error->reason);
                 ASSERT_TRUE(res2->data.get());
@@ -119,12 +119,12 @@ TEST_F(Storage, DontCacheConnectionErrors) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource resource{ Resource::Unknown, "http://127.0.0.1:3001" };
+    const std::string url = "http://127.0.0.1:3001";
 
     // Insert existing data into the cache that will be marked as stale.
     auto response = std::make_shared<Response>();
     response->data = std::make_shared<const std::string>("existing data");
-    cache.put(resource, response, FileCache::Hint::Full);
+    cache.put(url, response, FileCache::Hint::Full);
 
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<WorkRequest> req2;
@@ -133,7 +133,7 @@ TEST_F(Storage, DontCacheConnectionErrors) {
 
     // Then, request the actual URL and check that we're getting the rigged cache response first,
     // then the connection error message.
-    req1 = fs.request(resource, [&](Response res) {
+    req1 = fs.requestStyle(url, [&](Response res) {
         if (counter == 0) {
             EXPECT_EQ(nullptr, res.error);
             EXPECT_EQ(true, res.stale);
@@ -149,7 +149,7 @@ TEST_F(Storage, DontCacheConnectionErrors) {
 
             // Finally, check the cache to make sure we still have our original data in there rather
             // than the failed connection attempt.
-            req2 = cache.get(resource, [&](std::unique_ptr<Response> res2) {
+            req2 = cache.get(url, [&](std::unique_ptr<Response> res2) {
                 EXPECT_EQ(nullptr, res2->error);
                 ASSERT_TRUE(res2->data.get());
                 EXPECT_EQ("existing data", *res2->data);
@@ -175,12 +175,12 @@ TEST_F(Storage, DontCacheServerErrors) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource resource{ Resource::Unknown, "http://127.0.0.1:3000/permanent-error" };
+    const std::string url = "http://127.0.0.1:3000/permanent-error";
 
     // Insert existing data into the cache that will be marked as stale.
     auto response = std::make_shared<Response>();
     response->data = std::make_shared<const std::string>("existing data");
-    cache.put(resource, response, FileCache::Hint::Full);
+    cache.put(url, response, FileCache::Hint::Full);
 
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<WorkRequest> req2;
@@ -189,7 +189,7 @@ TEST_F(Storage, DontCacheServerErrors) {
 
     // Then, request the actual URL and check that we're getting the rigged cache response first,
     // then the server error message.
-    req1 = fs.request(resource, [&](Response res) {
+    req1 = fs.requestStyle(url, [&](Response res) {
         if (counter == 0) {
             EXPECT_EQ(nullptr, res.error);
             EXPECT_EQ(true, res.stale);
@@ -207,7 +207,7 @@ TEST_F(Storage, DontCacheServerErrors) {
 
             // Finally, check the cache to make sure we still have our original data in there rather
             // than the failed connection attempt.
-            req2 = cache.get(resource, [&](std::unique_ptr<Response> res2) {
+            req2 = cache.get(url, [&](std::unique_ptr<Response> res2) {
                 EXPECT_EQ(nullptr, res2->error);
                 ASSERT_TRUE(res2->data.get());
                 EXPECT_EQ("existing data", *res2->data);

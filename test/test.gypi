@@ -88,8 +88,8 @@
         'storage/http_timeout.cpp',
 
         'style/glyph_store.cpp',
-        'style/pending_resources.cpp',
-        'style/resource_loading.cpp',
+        'style/source.cpp',
+        'style/style.cpp',
         'style/style_layer.cpp',
 
         'sprite/sprite_atlas.cpp',

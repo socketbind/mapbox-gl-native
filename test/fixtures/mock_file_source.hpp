@@ -1,52 +1,38 @@
-#ifndef TEST_RESOURCES_MOCK_FILE_SOURCE
-#define TEST_RESOURCES_MOCK_FILE_SOURCE
+#ifndef TEST_RESOURCES_STUB_FILE_SOURCE
+#define TEST_RESOURCES_STUB_FILE_SOURCE
 
 #include <mbgl/storage/file_source.hpp>
 #include <mbgl/util/timer.hpp>
 
-#include <string>
 #include <unordered_map>
 
 namespace mbgl {
 
-// The MockFileSource is a FileSource that can simulate different
-// types of failures and it will work completely offline.
-class MockFileSource : public FileSource {
+class StubFileSource : public FileSource {
 public:
-    // Success:
-    //     Will reply to every request correctly with valid data.
-    //
-    // RequestFail:
-    //     Will reply with an error to requests that contains
-    //     the "match" string on the URL.
-    //
-    // RequestWithCorruptedData:
-    //     Will answer every request successfully but will return
-    //     corrupt data on the requests that contains the "match"
-    //     string on the URL.
-    enum Type {
-        Success,
-        RequestFail,
-        RequestWithCorruptedData
-    };
+    StubFileSource();
+    ~StubFileSource() override;
 
-    MockFileSource(Type, const std::string& match);
-    ~MockFileSource() override;
+    std::unique_ptr<FileRequest> requestStyle(const std::string& url, Callback) override;
+    std::unique_ptr<FileRequest> requestSource(const std::string& url, Callback) override;
+    std::unique_ptr<FileRequest> requestTile(const SourceInfo&, const TileID&, float pixelRatio, Callback) override;
+    std::unique_ptr<FileRequest> requestGlyphs(const std::string& urlTemplate, const std::string& fontStack, const GlyphRange&, Callback) override;
+    std::unique_ptr<FileRequest> requestSpriteJSON(const std::string& urlBase, float pixelRatio, Callback) override;
+    std::unique_ptr<FileRequest> requestSpriteImage(const std::string& urlBase, float pixelRatio, Callback) override;
 
-    // Function that gets called when a matching resource is enqueued.
-    std::function<void (void)> requestEnqueuedCallback;
-
-    // FileSource implementation.
-    std::unique_ptr<FileRequest> request(const Resource&, Callback) override;
+    std::function<Response (const std::string& url)> styleResponse;
+    std::function<Response (const std::string& url)> sourceResponse;
+    std::function<Response (const SourceInfo&, const TileID&, float pixelRatio)> tileResponse;
+    std::function<Response (const std::string& urlTemplate, const std::string& fontStack, const GlyphRange&)> glyphsResponse;
+    std::function<Response (const std::string& urlBase, float pixelRatio)> spriteJSONResponse;
+    std::function<Response (const std::string& urlBase, float pixelRatio)> spriteImageResponse;
 
 private:
-    void respond(Resource, Callback) const;
+    std::unique_ptr<FileRequest> respond(Response, Callback);
 
-    friend class MockFileRequest;
+    friend class StubFileRequest;
 
-    Type type;
-    std::string match;
-    std::unordered_map<FileRequest*, std::pair<Resource, Callback>> pending;
+    std::unordered_map<FileRequest*, std::pair<Response, Callback>> pending;
     util::Timer timer;
 };
 

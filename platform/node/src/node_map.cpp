@@ -5,6 +5,8 @@
 #include <mbgl/platform/default/headless_display.hpp>
 #include <mbgl/util/exception.hpp>
 #include <mbgl/util/work_request.hpp>
+#include <mbgl/map/source_info.hpp>
+#include <mbgl/map/tile_id.hpp>
 
 #include <unistd.h>
 
@@ -60,35 +62,18 @@ NAN_MODULE_INIT(NodeMap::Init) {
 }
 
 /**
- * A request object, given to the `request` handler of a map, is an
- * encapsulation of a URL and type of a resource that the map asks you to load.
- *
- * The `kind` property is one of
- *
- *     "Unknown": 0,
- *     "Style": 1,
- *     "Source": 2,
- *     "Tile": 3,
- *     "Glyphs": 4,
- *     "SpriteImage": 5,
- *     "SpriteJSON": 6
- *
- * @typedef
- * @name Request
- * @property {string} url
- * @property {number} kind
- */
-
-/**
  * Mapbox GL object: this object loads stylesheets and renders them into
  * images.
  *
  * @class
  * @name Map
  * @param {Object} options
- * @param {Function} options.request a method used to request resources
- * over the internet
- * @param {Function} [options.cancel]
+ * @param {Function} options.requestStyle
+ * @param {Function} options.requestSource
+ * @param {Function} options.requestTile
+ * @param {Function} options.requestGlyphs
+ * @param {Function} options.requestSpriteJSON
+ * @param {Function} options.requestSpriteImage
  * @param {number} options.ratio pixel ratio
  * @example
  * var map = new mbgl.Map({ request: function() {} });
@@ -109,18 +94,7 @@ NAN_METHOD(NodeMap::New) {
 
     auto options = info[0]->ToObject();
 
-    // Check that 'request' is set. If 'cancel' is set it must be a
-    // function and if 'ratio' is set it must be a number.
-    if (!Nan::Has(options, Nan::New("request").ToLocalChecked()).FromJust()
-     || !Nan::Get(options, Nan::New("request").ToLocalChecked()).ToLocalChecked()->IsFunction()) {
-        return Nan::ThrowError("Options object must have a 'request' method");
-    }
-
-    if (Nan::Has(options, Nan::New("cancel").ToLocalChecked()).FromJust()
-     && !Nan::Get(options, Nan::New("cancel").ToLocalChecked()).ToLocalChecked()->IsFunction()) {
-        return Nan::ThrowError("Options object 'cancel' property must be a function");
-    }
-
+    // If 'ratio' is set it must be a number.
     if (Nan::Has(options, Nan::New("ratio").ToLocalChecked()).FromJust()
      && !Nan::Get(options, Nan::New("ratio").ToLocalChecked()).ToLocalChecked()->IsNumber()) {
         return Nan::ThrowError("Options object 'ratio' property must be a number");
@@ -276,15 +250,15 @@ NAN_METHOD(NodeMap::Render) {
         return Nan::ThrowTypeError("Style is not loaded");
     }
 
-    if (nodeMap->callback) {
+    if (nodeMap->renderCallback) {
         return Nan::ThrowError("Map is currently rendering an image");
     }
 
     auto options = ParseOptions(info[0]->ToObject());
 
-    assert(!nodeMap->callback);
+    assert(!nodeMap->renderCallback);
     assert(!nodeMap->image.data);
-    nodeMap->callback = std::make_unique<Nan::Callback>(info[1].As<v8::Function>());
+    nodeMap->renderCallback = std::make_unique<Nan::Callback>(info[1].As<v8::Function>());
 
     try {
         nodeMap->startRender(std::move(options));
@@ -334,12 +308,12 @@ void NodeMap::renderFinished() {
     Unref();
 
     // Move the callback and image out of the way so that the callback can start a new render call.
-    auto cb = std::move(callback);
+    auto cb = std::move(renderCallback);
     auto img = std::move(image);
     assert(cb);
 
     // These have to be empty to be prepared for the next render call.
-    assert(!callback);
+    assert(!renderCallback);
     assert(!image.data);
 
     if (error) {
@@ -450,25 +424,88 @@ NodeMap::~NodeMap() {
 
 class NodeFileSourceRequest : public mbgl::FileRequest {
 public:
+    NodeFileSourceRequest(std::unique_ptr<mbgl::WorkRequest> workRequest_)
+        : workRequest(std::move(workRequest_)) {}
+
     std::unique_ptr<mbgl::WorkRequest> workRequest;
 };
 
-std::unique_ptr<mbgl::FileRequest> NodeMap::request(const mbgl::Resource& resource, Callback cb1) {
-    auto req = std::make_unique<NodeFileSourceRequest>();
+template <typename... Handles>
+void NodeMap::request(const char * method, Callback callback, Handles... handles) {
+    Nan::HandleScope scope;
 
+    auto requestHandle = NodeRequest::Create(callback)->ToObject();
+    auto callbackHandle = Nan::GetFunction(Nan::New<v8::FunctionTemplate>(NodeRequest::Respond, requestHandle)).ToLocalChecked();
+
+    v8::Local<v8::Value> argv[] = { handles..., callbackHandle };
+    Nan::MakeCallback(handle()->GetInternalField(1)->ToObject(), method, sizeof...(handles) + 1, argv);
+}
+
+std::unique_ptr<mbgl::FileRequest> NodeMap::requestStyle(const std::string& url, Callback cb) {
     // This function can be called from any thread. Make sure we're executing the
     // JS implementation in the node event loop.
-    req->workRequest = NodeRunLoop().invokeWithCallback([this] (mbgl::Resource res, Callback cb2) {
-        Nan::HandleScope scope;
+    return std::make_unique<NodeFileSourceRequest>(NodeRunLoop().invokeWithCallback(
+        [this, url] (Callback callback) {
+            Nan::HandleScope scope;
+            request("requestStyle", callback,
+                    Nan::New(url).ToLocalChecked());
+        }, cb));
+}
 
-        auto requestHandle = NodeRequest::Create(res, cb2)->ToObject();
-        auto callbackHandle = Nan::GetFunction(Nan::New<v8::FunctionTemplate>(NodeRequest::Respond, requestHandle)).ToLocalChecked();
+std::unique_ptr<mbgl::FileRequest> NodeMap::requestSource(const std::string& url, Callback cb) {
+    return std::make_unique<NodeFileSourceRequest>(NodeRunLoop().invokeWithCallback(
+        [this, url] (Callback callback) {
+            Nan::HandleScope scope;
+            request("requestSource", callback,
+                    Nan::New(url).ToLocalChecked());
+        }, cb));
+}
 
-        v8::Local<v8::Value> argv[] = { requestHandle, callbackHandle };
-        Nan::MakeCallback(handle()->GetInternalField(1)->ToObject(), "request", 2, argv);
-    }, cb1, resource);
+std::unique_ptr<mbgl::FileRequest> NodeMap::requestTile(const mbgl::SourceInfo& source, const mbgl::TileID& tileID,
+                                                        float pixelRatio, Callback cb) {
+    return std::make_unique<NodeFileSourceRequest>(NodeRunLoop().invokeWithCallback(
+        [this, source, tileID, pixelRatio] (Callback callback) {
+            Nan::HandleScope scope;
+            request("requestTile", callback,
+                    Nan::New(source.tiles[0]).ToLocalChecked(),
+                    Nan::New(tileID.x),
+                    Nan::New(tileID.y),
+                    Nan::New(tileID.z),
+                    Nan::New(pixelRatio));
+        }, cb));
+}
 
-    return std::move(req);
+std::unique_ptr<mbgl::FileRequest> NodeMap::requestGlyphs(const std::string& urlTemplate, const std::string& fontStack,
+                                                          const mbgl::GlyphRange& glyphRange, Callback cb) {
+    return std::make_unique<NodeFileSourceRequest>(NodeRunLoop().invokeWithCallback(
+        [this, urlTemplate, fontStack, glyphRange] (Callback callback) {
+            Nan::HandleScope scope;
+            request("requestGlyphs", callback,
+                    Nan::New(urlTemplate).ToLocalChecked(),
+                    Nan::New(fontStack).ToLocalChecked(),
+                    Nan::New(glyphRange.first),
+                    Nan::New(glyphRange.second));
+        }, cb));
+}
+
+std::unique_ptr<mbgl::FileRequest> NodeMap::requestSpriteJSON(const std::string& urlBase, float pixelRatio, Callback cb) {
+    return std::make_unique<NodeFileSourceRequest>(NodeRunLoop().invokeWithCallback(
+        [this, urlBase, pixelRatio] (Callback callback) {
+            Nan::HandleScope scope;
+            request("requestSpriteJSON", callback,
+                    Nan::New(urlBase).ToLocalChecked(),
+                    Nan::New(pixelRatio));
+        }, cb));
+}
+
+std::unique_ptr<mbgl::FileRequest> NodeMap::requestSpriteImage(const std::string& urlBase, float pixelRatio, Callback cb) {
+    return std::make_unique<NodeFileSourceRequest>(NodeRunLoop().invokeWithCallback(
+        [this, urlBase, pixelRatio] (Callback callback) {
+            Nan::HandleScope scope;
+            request("requestSpriteImage", callback,
+                    Nan::New(urlBase).ToLocalChecked(),
+                    Nan::New(pixelRatio));
+        }, cb));
 }
 
 }

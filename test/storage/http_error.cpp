@@ -17,7 +17,7 @@ TEST_F(Storage, HTTPTemporaryError) {
 
     const auto start = Clock::now();
 
-    std::unique_ptr<FileRequest> req1 = fs.request({ Resource::Unknown, "http://127.0.0.1:3000/temporary-error" }, [&](Response res) {
+    std::unique_ptr<FileRequest> req1 = fs.requestStyle("http://127.0.0.1:3000/temporary-error", [&](Response res) {
         static int counter = 0;
         switch (counter++) {
         case 0: {
@@ -64,7 +64,7 @@ TEST_F(Storage, HTTPConnectionError) {
 
     const auto start = Clock::now();
 
-    std::unique_ptr<FileRequest> req2 = fs.request({ Resource::Unknown, "http://127.0.0.1:3001/" }, [&](Response res) {
+    std::unique_ptr<FileRequest> req2 = fs.requestStyle("http://127.0.0.1:3001/", [&](Response res) {
         static int counter = 0;
         static int wait = 0;
         const auto duration = std::chrono::duration<const double>(Clock::now() - start).count();

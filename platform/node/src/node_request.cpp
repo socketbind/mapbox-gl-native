@@ -28,16 +28,13 @@ NAN_METHOD(NodeRequest::New) {
     info.GetReturnValue().Set(info.This());
 }
 
-v8::Handle<v8::Object> NodeRequest::Create(const mbgl::Resource& resource, mbgl::FileSource::Callback callback) {
+v8::Handle<v8::Object> NodeRequest::Create(mbgl::FileSource::Callback callback) {
     Nan::EscapableHandleScope scope;
 
     v8::Local<v8::Value> argv[] = {
         Nan::New<v8::External>(const_cast<mbgl::FileSource::Callback*>(&callback))
     };
     auto instance = Nan::New(constructor)->NewInstance(1, argv);
-
-    Nan::Set(instance, Nan::New("url").ToLocalChecked(), Nan::New(resource.url).ToLocalChecked());
-    Nan::Set(instance, Nan::New("kind").ToLocalChecked(), Nan::New<v8::Integer>(int(resource.kind)));
 
     return scope.Escape(instance);
 }

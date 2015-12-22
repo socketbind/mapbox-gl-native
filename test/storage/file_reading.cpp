@@ -37,11 +37,11 @@ public:
                 endCallback();
                 request.reset();
             } else {
-                request = fs->request({ mbgl::Resource::Unknown, asset }, requestCallback);
+                request = fs->requestStyle(asset, requestCallback);
             }
         };
 
-        request = fs->request({ mbgl::Resource::Unknown, asset }, requestCallback);
+        request = fs->requestStyle(asset, requestCallback);
     }
 
 private:
@@ -100,7 +100,7 @@ TEST_F(Storage, AssetEmptyFile) {
 
     OnlineFileSource fs(nullptr, getFileSourceRoot());
 
-    std::unique_ptr<FileRequest> req = fs.request({ Resource::Unknown, "asset://TEST_DATA/fixtures/storage/empty" }, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle("asset://TEST_DATA/fixtures/storage/empty", [&](Response res) {
         req.reset();
         EXPECT_EQ(nullptr, res.error);
         EXPECT_EQ(false, res.stale);
@@ -125,7 +125,7 @@ TEST_F(Storage, AssetNonEmptyFile) {
 
     OnlineFileSource fs(nullptr, getFileSourceRoot());
 
-    std::unique_ptr<FileRequest> req = fs.request({ Resource::Unknown, "asset://TEST_DATA/fixtures/storage/nonempty" }, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle("asset://TEST_DATA/fixtures/storage/nonempty", [&](Response res) {
         req.reset();
         EXPECT_EQ(nullptr, res.error);
         EXPECT_EQ(false, res.stale);
@@ -152,7 +152,7 @@ TEST_F(Storage, AssetNonExistentFile) {
 
     OnlineFileSource fs(nullptr, getFileSourceRoot());
 
-    std::unique_ptr<FileRequest> req = fs.request({ Resource::Unknown, "asset://TEST_DATA/fixtures/storage/does_not_exist" }, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle("asset://TEST_DATA/fixtures/storage/does_not_exist", [&](Response res) {
         req.reset();
         ASSERT_NE(nullptr, res.error);
         EXPECT_EQ(Response::Error::Reason::NotFound, res.error->reason);
@@ -178,7 +178,7 @@ TEST_F(Storage, AssetNotCached) {
 
     using namespace mbgl;
 
-    const Resource resource { Resource::Unknown, "asset://TEST_DATA/fixtures/storage/nonempty" };
+    const std::string url = "asset://TEST_DATA/fixtures/storage/nonempty";
 
     util::RunLoop loop;
 
@@ -188,20 +188,20 @@ TEST_F(Storage, AssetNotCached) {
     {
         auto response = std::make_shared<Response>();
         response->data = std::make_shared<const std::string>("cached data");
-        cache.put(resource, response, FileCache::Hint::Full);
+        cache.put(url, response, FileCache::Hint::Full);
     }
 
     OnlineFileSource fs(&cache, getFileSourceRoot());
 
     std::unique_ptr<WorkRequest> workReq;
-    std::unique_ptr<FileRequest> req = fs.request(resource, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle(url, [&](Response res) {
         req.reset();
 
         EXPECT_EQ(nullptr, res.error);
         ASSERT_TRUE(res.data.get());
         EXPECT_EQ("content is here\n", *res.data);
 
-        workReq = cache.get(resource, [&](std::shared_ptr<Response> response) {
+        workReq = cache.get(url, [&](std::shared_ptr<Response> response) {
             // Check that we didn't put the file into the cache
             ASSERT_TRUE(response->data.get());
             EXPECT_EQ(*response->data, "cached data");

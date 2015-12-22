@@ -77,7 +77,7 @@ TEST_F(Storage, DatabaseVersion) {
         SQLiteCache::Impl cache(path);
 
         auto response = std::make_shared<Response>();
-        cache.put({ Resource::Unknown, "mapbox://test" }, response);
+        cache.put("mapbox://test", response);
     }
 
     sqlite3* db;
@@ -90,7 +90,7 @@ TEST_F(Storage, DatabaseVersion) {
     {
         SQLiteCache::Impl cache(path);
 
-        cache.get({ Resource::Unknown, "mapbox://test" }, [] (std::unique_ptr<Response> res) {
+        cache.get("mapbox://test", [] (std::unique_ptr<Response> res) {
             EXPECT_EQ(nullptr, res.get());
         });
     }

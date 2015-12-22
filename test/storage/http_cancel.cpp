@@ -16,7 +16,7 @@ TEST_F(Storage, HTTPCancel) {
     OnlineFileSource fs(nullptr);
 
     auto req =
-        fs.request({ Resource::Unknown, "http://127.0.0.1:3000/test" },
+        fs.requestStyle("http://127.0.0.1:3000/test",
                    [&](Response) { ADD_FAILURE() << "Callback should not be called"; });
 
     req.reset();
@@ -33,12 +33,12 @@ TEST_F(Storage, HTTPCancelMultiple) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/test" };
+    std::string url = "http://127.0.0.1:3000/test";
 
-    std::unique_ptr<FileRequest> req2 = fs.request(resource, [&](Response) {
+    std::unique_ptr<FileRequest> req2 = fs.requestStyle(url, [&](Response) {
         ADD_FAILURE() << "Callback should not be called";
     });
-    std::unique_ptr<FileRequest> req = fs.request(resource, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle(url, [&](Response res) {
         req.reset();
         EXPECT_EQ(nullptr, res.error);
         EXPECT_EQ(false, res.stale);

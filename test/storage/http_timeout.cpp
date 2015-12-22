@@ -15,8 +15,8 @@ TEST_F(Storage, HTTPTimeout) {
 
     int counter = 0;
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/test?cachecontrol=max-age=1" };
-    std::unique_ptr<FileRequest> req = fs.request(resource, [&](Response res) {
+    std::string url = "http://127.0.0.1:3000/test?cachecontrol=max-age=1";
+    std::unique_ptr<FileRequest> req = fs.requestStyle(url, [&](Response res) {
         counter++;
         EXPECT_EQ(nullptr, res.error);
         EXPECT_EQ(false, res.stale);

@@ -28,41 +28,6 @@ NAN_MODULE_INIT(RegisterModule) {
     node_mbgl::NodeMap::Init(target);
     node_mbgl::NodeRequest::Init(target);
 
-    // Exports Resource constants.
-    v8::Local<v8::Object> resource = Nan::New<v8::Object>();
-
-    Nan::Set(resource,
-        Nan::New("Unknown").ToLocalChecked(),
-        Nan::New(mbgl::Resource::Unknown));
-
-    Nan::Set(resource,
-        Nan::New("Style").ToLocalChecked(),
-        Nan::New(mbgl::Resource::Style));
-
-    Nan::Set(resource,
-        Nan::New("Source").ToLocalChecked(),
-        Nan::New(mbgl::Resource::Source));
-
-    Nan::Set(resource,
-        Nan::New("Tile").ToLocalChecked(),
-        Nan::New(mbgl::Resource::Tile));
-
-    Nan::Set(resource,
-        Nan::New("Glyphs").ToLocalChecked(),
-        Nan::New(mbgl::Resource::Glyphs));
-
-    Nan::Set(resource,
-        Nan::New("SpriteImage").ToLocalChecked(),
-        Nan::New(mbgl::Resource::SpriteImage));
-
-    Nan::Set(resource,
-        Nan::New("SpriteJSON").ToLocalChecked(),
-        Nan::New(mbgl::Resource::SpriteJSON));
-
-    Nan::Set(target,
-        Nan::New("Resource").ToLocalChecked(),
-        resource);
-
     // Make the exported object inherit from process.EventEmitter
     v8::Local<v8::Object> process = Nan::Get(
         Nan::GetCurrentContext()->Global(),

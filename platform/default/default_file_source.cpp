@@ -1,5 +1,7 @@
 #include <mbgl/storage/default_file_source.hpp>
 #include <mbgl/storage/online_file_source.hpp>
+#include <mbgl/map/tile_id.hpp>
+#include <mbgl/map/source_info.hpp>
 
 namespace mbgl {
 
@@ -26,8 +28,28 @@ std::string DefaultFileSource::getAccessToken() const {
     return impl->onlineFileSource.getAccessToken();
 }
 
-std::unique_ptr<FileRequest> DefaultFileSource::request(const Resource& resource, Callback callback) {
-    return impl->onlineFileSource.request(resource, callback);
+std::unique_ptr<FileRequest> DefaultFileSource::requestStyle(const std::string& url, Callback callback) {
+    return impl->onlineFileSource.requestStyle(url, callback);
+}
+
+std::unique_ptr<FileRequest> DefaultFileSource::requestSource(const std::string& url, Callback callback) {
+    return impl->onlineFileSource.requestSource(url, callback);
+}
+
+std::unique_ptr<FileRequest> DefaultFileSource::requestTile(const SourceInfo& source, const TileID& id, float pixelRatio, Callback callback) {
+    return impl->onlineFileSource.requestTile(source, id, pixelRatio, callback);
+}
+
+std::unique_ptr<FileRequest> DefaultFileSource::requestGlyphs(const std::string& urlTemplate, const std::string& fontStack, const GlyphRange& glyphRange, Callback callback) {
+    return impl->onlineFileSource.requestGlyphs(urlTemplate, fontStack, glyphRange, callback);
+}
+
+std::unique_ptr<FileRequest> DefaultFileSource::requestSpriteJSON(const std::string& urlBase, float pixelRatio, Callback callback) {
+    return impl->onlineFileSource.requestSpriteJSON(urlBase, pixelRatio, callback);
+}
+
+std::unique_ptr<FileRequest> DefaultFileSource::requestSpriteImage(const std::string& urlBase, float pixelRatio, Callback callback) {
+    return impl->onlineFileSource.requestSpriteImage(urlBase, pixelRatio, callback);
 }
 
 } // namespace mbgl

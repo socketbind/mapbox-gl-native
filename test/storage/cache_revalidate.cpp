@@ -14,10 +14,10 @@ TEST_F(Storage, CacheRevalidateSame) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource revalidateSame { Resource::Unknown, "http://127.0.0.1:3000/revalidate-same" };
+    std::string revalidateSame = "http://127.0.0.1:3000/revalidate-same";
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<FileRequest> req2;
-    req1 = fs.request(revalidateSame, [&](Response res) {
+    req1 = fs.requestStyle(revalidateSame, [&](Response res) {
         // This callback can get triggered multiple times. We only care about the first invocation.
         // It will get triggered again when refreshing the req2 (see below).
         static bool first = true;
@@ -34,7 +34,7 @@ TEST_F(Storage, CacheRevalidateSame) {
         EXPECT_EQ(Seconds::zero(), res.modified);
         EXPECT_EQ("snowfall", res.etag);
 
-        req2 = fs.request(revalidateSame, [&, res](Response res2) {
+        req2 = fs.requestStyle(revalidateSame, [&, res](Response res2) {
             if (res2.stale) {
                 // Discard stale responses, if any.
                 return;
@@ -74,11 +74,10 @@ TEST_F(Storage, CacheRevalidateModified) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource revalidateModified{ Resource::Unknown,
-                                       "http://127.0.0.1:3000/revalidate-modified" };
+    std::string revalidateModified = "http://127.0.0.1:3000/revalidate-modified";
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<FileRequest> req2;
-    req1 = fs.request(revalidateModified, [&](Response res) {
+    req1 = fs.requestStyle(revalidateModified, [&](Response res) {
         // This callback can get triggered multiple times. We only care about the first invocation.
         // It will get triggered again when refreshing the req2 (see below).
         static bool first = true;
@@ -95,7 +94,7 @@ TEST_F(Storage, CacheRevalidateModified) {
         EXPECT_EQ(1420070400, res.modified.count());
         EXPECT_EQ("", res.etag);
 
-        req2 = fs.request(revalidateModified, [&, res](Response res2) {
+        req2 = fs.requestStyle(revalidateModified, [&, res](Response res2) {
             if (res2.stale) {
                 // Discard stale responses, if any.
                 return;
@@ -134,10 +133,10 @@ TEST_F(Storage, CacheRevalidateEtag) {
     SQLiteCache cache(":memory:");
     OnlineFileSource fs(&cache);
 
-    const Resource revalidateEtag { Resource::Unknown, "http://127.0.0.1:3000/revalidate-etag" };
+    std::string revalidateEtag = "http://127.0.0.1:3000/revalidate-etag";
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<FileRequest> req2;
-    req1 = fs.request(revalidateEtag, [&](Response res) {
+    req1 = fs.requestStyle(revalidateEtag, [&](Response res) {
         // This callback can get triggered multiple times. We only care about the first invocation.
         // It will get triggered again when refreshing the req2 (see below).
         static bool first = true;
@@ -154,7 +153,7 @@ TEST_F(Storage, CacheRevalidateEtag) {
         EXPECT_EQ(Seconds::zero(), res.modified);
         EXPECT_EQ("response-1", res.etag);
 
-        req2 = fs.request(revalidateEtag, [&, res](Response res2) {
+        req2 = fs.requestStyle(revalidateEtag, [&, res](Response res2) {
             if (res2.stale) {
                 // Discard stale responses, if any.
                 return;

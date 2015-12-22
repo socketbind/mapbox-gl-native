@@ -1,16 +1,14 @@
 #include <mbgl/text/glyph_pbf.hpp>
 
 #include <mbgl/storage/file_source.hpp>
-#include <mbgl/storage/resource.hpp>
 #include <mbgl/storage/response.hpp>
 #include <mbgl/text/font_stack.hpp>
 #include <mbgl/text/glyph_store.hpp>
 #include <mbgl/util/exception.hpp>
 #include <mbgl/util/pbf.hpp>
-#include <mbgl/util/string.hpp>
 #include <mbgl/util/thread_context.hpp>
-#include <mbgl/util/token.hpp>
-#include <mbgl/util/url.hpp>
+
+#include <cassert>
 
 namespace {
 
@@ -67,14 +65,8 @@ GlyphPBF::GlyphPBF(GlyphStore* store,
                    GlyphStore::Observer* observer_)
     : parsed(false),
       observer(observer_) {
-    // Load the glyph set URL
-    std::string url = util::replaceTokens(store->getURL(), [&](const std::string &name) -> std::string {
-        if (name == "fontstack") return util::percentEncode(fontStack);
-        if (name == "range") return util::toString(glyphRange.first) + "-" + util::toString(glyphRange.second);
-        return "";
-    });
-
-    auto requestCallback = [this, store, fontStack, glyphRange](Response res) {
+    FileSource* fs = util::ThreadContext::getFileSource();
+    req = fs->requestGlyphs(store->getURL(), fontStack, glyphRange, [this, store, fontStack, glyphRange](Response res) {
         if (res.stale) {
             // Only handle fresh responses.
             return;
@@ -87,10 +79,7 @@ GlyphPBF::GlyphPBF(GlyphStore* store,
             data = res.data;
             parse(store, fontStack, glyphRange);
         }
-    };
-
-    FileSource* fs = util::ThreadContext::getFileSource();
-    req = fs->request({ Resource::Kind::Glyphs, url }, requestCallback);
+    });
 }
 
 GlyphPBF::~GlyphPBF() = default;

@@ -17,7 +17,7 @@ TEST_F(Storage, AssetReadDirectory) {
     OnlineFileSource fs(nullptr);
 #endif
 
-    std::unique_ptr<FileRequest> req = fs.request({ Resource::Unknown, "asset://TEST_DATA/fixtures/storage" }, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle("asset://TEST_DATA/fixtures/storage", [&](Response res) {
         req.reset();
         ASSERT_NE(nullptr, res.error);
         EXPECT_EQ(Response::Error::Reason::NotFound, res.error->reason);

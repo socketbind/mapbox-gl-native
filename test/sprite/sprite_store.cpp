@@ -5,6 +5,8 @@
 
 #include <mbgl/sprite/sprite_store.hpp>
 #include <mbgl/util/run_loop.hpp>
+#include <mbgl/util/string.hpp>
+#include <mbgl/util/io.hpp>
 
 #include <utility>
 
@@ -149,17 +151,16 @@ TEST(SpriteStore, ReplaceWithDifferentDimensions) {
 
 class SpriteStoreTest {
 public:
-    SpriteStoreTest(MockFileSource::Type type, const std::string& resource)
-        : fileSource(type, resource),
-          spriteStore(1.0) {}
+    SpriteStoreTest()
+        : spriteStore(1.0) {}
 
     util::ThreadContext context { "Map", util::ThreadType::Map, util::ThreadPriority::Regular };
     util::RunLoop loop;
-    MockFileSource fileSource;
+    StubFileSource fileSource;
     StubStyleObserver observer;
     SpriteStore spriteStore;
 
-    void run(const std::string& url) {
+    void run() {
         // Squelch logging.
         Log::setObserver(std::make_unique<Log::NullObserver>());
 
@@ -167,7 +168,7 @@ public:
         util::ThreadContext::setFileSource(&fileSource);
 
         spriteStore.setObserver(&observer);
-        spriteStore.setURL(url);
+        spriteStore.setURL("test/fixtures/resources/sprite");
 
         loop.run();
     }
@@ -177,70 +178,133 @@ public:
     }
 };
 
-TEST(SpriteStore, LoadingSuccess) {
-    SpriteStoreTest test(MockFileSource::Success, "");
+Response successfulSpriteImageResponse(const std::string& url, float pixelRatio) {
+    EXPECT_EQ("test/fixtures/resources/sprite", url);
+    EXPECT_EQ(1.0, pixelRatio);
+    Response response;
+    response.data = std::make_shared<std::string>(util::read_file(url + ".png"));
+    return response;
+};
 
-    test.observer.spriteError = [&] (std::exception_ptr) {
-        FAIL();
+Response successfulSpriteJSONResponse(const std::string& url, float pixelRatio) {
+    EXPECT_EQ("test/fixtures/resources/sprite", url);
+    EXPECT_EQ(1.0, pixelRatio);
+    Response response;
+    response.data = std::make_shared<std::string>(util::read_file(url + ".json"));
+    return response;
+};
+
+Response failedSpriteResponse(const std::string&, float) {
+    Response response;
+    response.error = std::make_unique<Response::Error>(
+        Response::Error::Reason::Other,
+        "Failed by the test case");
+    return response;
+};
+
+Response corruptSpriteResponse(const std::string&, float) {
+    Response response;
+    response.data = std::make_shared<std::string>("CORRUPT");
+    return response;
+};
+
+TEST(SpriteStore, LoadingSuccess) {
+    SpriteStoreTest test;
+
+    test.fileSource.spriteImageResponse = successfulSpriteImageResponse;
+    test.fileSource.spriteJSONResponse = successfulSpriteJSONResponse;
+
+    test.observer.spriteError = [&] (std::exception_ptr error) {
+        FAIL() << util::toString(error);
         test.end();
     };
 
     test.observer.spriteLoaded = [&] () {
-        ASSERT_TRUE(!test.spriteStore.getDirty().empty());
-        ASSERT_EQ(test.spriteStore.pixelRatio, 1.0);
-        ASSERT_TRUE(test.spriteStore.isLoaded());
+        EXPECT_TRUE(!test.spriteStore.getDirty().empty());
+        EXPECT_EQ(test.spriteStore.pixelRatio, 1.0);
+        EXPECT_TRUE(test.spriteStore.isLoaded());
         test.end();
     };
 
-    test.run("test/fixtures/resources/sprite");
+    test.run();
 }
 
-TEST(SpriteStore, LoadingFail) {
-    SpriteStoreTest test(MockFileSource::RequestFail, "sprite.json");
+TEST(SpriteStore, JSONLoadingFail) {
+    SpriteStoreTest test;
+
+    test.fileSource.spriteImageResponse = successfulSpriteImageResponse;
+    test.fileSource.spriteJSONResponse = failedSpriteResponse;
 
     test.observer.spriteError = [&] (std::exception_ptr error) {
-        ASSERT_TRUE(error != nullptr);
-        ASSERT_FALSE(test.spriteStore.isLoaded());
+        EXPECT_TRUE(error != nullptr);
+        EXPECT_EQ(util::toString(error), "Failed by the test case");
+        EXPECT_FALSE(test.spriteStore.isLoaded());
         test.end();
     };
 
-    test.run("test/fixtures/resources/sprite");
+    test.run();
 }
 
-TEST(SpriteStore, LoadingCorrupted) {
-    SpriteStoreTest test(MockFileSource::RequestWithCorruptedData, "sprite.json");
+TEST(SpriteStore, ImageLoadingFail) {
+    SpriteStoreTest test;
+
+    test.fileSource.spriteImageResponse = failedSpriteResponse;
+    test.fileSource.spriteJSONResponse = successfulSpriteJSONResponse;
 
     test.observer.spriteError = [&] (std::exception_ptr error) {
-        ASSERT_TRUE(error != nullptr);
-        ASSERT_FALSE(test.spriteStore.isLoaded());
+        EXPECT_TRUE(error != nullptr);
+        EXPECT_EQ(util::toString(error), "Failed by the test case");
+        EXPECT_FALSE(test.spriteStore.isLoaded());
         test.end();
     };
 
-    test.run("test/fixtures/resources/sprite");
+    test.run();
+}
+
+TEST(SpriteStore, JSONLoadingCorrupted) {
+    SpriteStoreTest test;
+
+    test.fileSource.spriteImageResponse = successfulSpriteImageResponse;
+    test.fileSource.spriteJSONResponse = corruptSpriteResponse;
+
+    test.observer.spriteError = [&] (std::exception_ptr error) {
+        EXPECT_TRUE(error != nullptr);
+        EXPECT_EQ(util::toString(error), "Failed to parse JSON: Invalid value. at offset 0");
+        EXPECT_FALSE(test.spriteStore.isLoaded());
+        test.end();
+    };
+
+    test.run();
+}
+
+TEST(SpriteStore, ImageLoadingCorrupted) {
+    SpriteStoreTest test;
+
+    test.fileSource.spriteImageResponse = corruptSpriteResponse;
+    test.fileSource.spriteJSONResponse = successfulSpriteJSONResponse;
+
+    test.observer.spriteError = [&] (std::exception_ptr error) {
+        EXPECT_TRUE(error != nullptr);
+        // Not asserting on platform-specific error text.
+        EXPECT_FALSE(test.spriteStore.isLoaded());
+        test.end();
+    };
+
+    test.run();
 }
 
 TEST(SpriteStore, LoadingCancel) {
-    SpriteStoreTest test(MockFileSource::Success, "sprite.json");
+    SpriteStoreTest test;
+
+    test.fileSource.spriteImageResponse =
+    test.fileSource.spriteJSONResponse = [&] (const std::string&, float) {
+        test.end();
+        return Response();
+    };
 
     test.observer.spriteLoaded = [&] () {
         FAIL() << "Should never be called";
     };
 
-    test.fileSource.requestEnqueuedCallback = [&]{
-        test.end();
-    };
-
-    test.run("test/fixtures/resources/sprite");
-}
-
-TEST(SpriteStore, InvalidURL) {
-    SpriteStoreTest test(MockFileSource::Success, "");
-
-    test.observer.spriteError = [&] (std::exception_ptr error) {
-        ASSERT_TRUE(error != nullptr);
-        ASSERT_EQ(test.spriteStore.isLoaded(), false);
-        test.end();
-    };
-
-    test.run("foo bar");
+    test.run();
 }

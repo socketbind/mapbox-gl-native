@@ -40,11 +40,11 @@ TEST_F(Storage, HTTPCoalescing) {
         }
     };
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/test" };
+    std::string url = "http://127.0.0.1:3000/test";
 
     std::unique_ptr<FileRequest> reqs[total];
     for (int i = 0; i < total; i++) {
-        reqs[i] = fs.request(resource, [&complete, &fs, &reqs, i] (Response res) {
+        reqs[i] = fs.requestStyle(url, [&complete, &fs, &reqs, i] (Response res) {
             reqs[i].reset();
             complete(res);
         });
@@ -61,10 +61,10 @@ TEST_F(Storage, HTTPMultiple) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/test?expires=2147483647" };
+    std::string url = "http://127.0.0.1:3000/test?expires=2147483647";
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<FileRequest> req2;
-    req1 = fs.request(resource, [&] (Response res) {
+    req1 = fs.requestStyle(url, [&] (Response res) {
         // Do not cancel the request right away.
         EXPECT_EQ(nullptr, res.error);
         ASSERT_TRUE(res.data.get());
@@ -74,7 +74,7 @@ TEST_F(Storage, HTTPMultiple) {
         EXPECT_EQ("", res.etag);
 
         // Start a second request for the same resource after the first one has been completed.
-        req2 = fs.request(resource, [&, res] (Response res2) {
+        req2 = fs.requestStyle(url, [&, res] (Response res2) {
             // Make sure we get the same data as before.
             EXPECT_EQ(res.data.get(), res2.data.get());
 
@@ -109,10 +109,10 @@ TEST_F(Storage, HTTPStale) {
     int updates = 0;
     int stale = 0;
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/test" };
+    std::string url = "http://127.0.0.1:3000/test";
     std::unique_ptr<FileRequest> req1;
     std::unique_ptr<FileRequest> req2;
-    req1 = fs.request(resource, [&] (Response res) {
+    req1 = fs.requestStyle(url, [&] (Response res) {
         // Do not cancel the request right away.
         EXPECT_EQ(nullptr, res.error);
         ASSERT_TRUE(res.data.get());
@@ -130,7 +130,7 @@ TEST_F(Storage, HTTPStale) {
         updates++;
 
         // Start a second request for the same resource after the first one has been completed.
-        req2 = fs.request(resource, [&] (Response res2) {
+        req2 = fs.requestStyle(url, [&] (Response res2) {
             EXPECT_EQ(nullptr, res2.error);
             ASSERT_TRUE(res2.data.get());
             EXPECT_EQ("Hello World!", *res2.data);

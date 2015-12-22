@@ -25,13 +25,13 @@ TEST_F(Storage, HTTPIssue1369) {
     SQLiteCache cache;
     OnlineFileSource fs(&cache);
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/test" };
+    std::string url = "http://127.0.0.1:3000/test";
 
-    auto req = fs.request(resource, [&](Response) {
+    auto req = fs.requestStyle(url, [&](Response) {
         ADD_FAILURE() << "Callback should not be called";
     });
     req.reset();
-    req = fs.request(resource, [&](Response res) {
+    req = fs.requestStyle(url, [&](Response res) {
         req.reset();
         EXPECT_EQ(nullptr, res.error);
         EXPECT_EQ(false, res.stale);

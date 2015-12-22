@@ -20,10 +20,10 @@ TEST_F(Storage, HTTPNetworkStatusChange) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    const Resource resource { Resource::Unknown, "http://127.0.0.1:3000/delayed" };
+    std::string url = "http://127.0.0.1:3000/delayed";
 
     // This request takes 200 milliseconds to answer.
-    std::unique_ptr<FileRequest> req = fs.request(resource, [&](Response res) {
+    std::unique_ptr<FileRequest> req = fs.requestStyle(url, [&](Response res) {
          req.reset();
          EXPECT_EQ(nullptr, res.error);
          EXPECT_EQ(false, res.stale);
@@ -62,8 +62,8 @@ TEST_F(Storage, HTTPNetworkStatusChangePreempt) {
 
     const auto start = Clock::now();
 
-    const Resource resource{ Resource::Unknown, "http://127.0.0.1:3001/test" };
-    std::unique_ptr<FileRequest> req = fs.request(resource, [&](Response res) {
+    std::string url = "http://127.0.0.1:3001/test";
+    std::unique_ptr<FileRequest> req = fs.requestStyle(url, [&](Response res) {
         static int counter = 0;
         const auto duration = std::chrono::duration<const double>(Clock::now() - start).count();
         if (counter == 0) {

@@ -13,7 +13,7 @@ TEST_F(Storage, HTTPOtherLoop) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    std::unique_ptr<FileRequest> req = fs.request({ Resource::Unknown, "http://127.0.0.1:3000/test" },
+    std::unique_ptr<FileRequest> req = fs.requestStyle("http://127.0.0.1:3000/test",
                [&](Response res) {
         req.reset();
         EXPECT_EQ(nullptr, res.error);

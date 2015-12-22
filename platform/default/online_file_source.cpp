@@ -7,6 +7,9 @@
 #include <mbgl/platform/platform.hpp>
 #include <mbgl/platform/log.hpp>
 
+#include <mbgl/map/tile_id.hpp>
+#include <mbgl/map/source_info.hpp>
+
 #include <mbgl/util/thread.hpp>
 #include <mbgl/util/mapbox.hpp>
 #include <mbgl/util/exception.hpp>
@@ -14,6 +17,8 @@
 #include <mbgl/util/async_task.hpp>
 #include <mbgl/util/noncopyable.hpp>
 #include <mbgl/util/timer.hpp>
+#include <mbgl/util/string.hpp>
+#include <mbgl/util/token.hpp>
 #include <mbgl/util/url.hpp>
 
 #include <algorithm>
@@ -27,17 +32,17 @@ class RequestBase;
 
 class OnlineFileRequest : public FileRequest {
 public:
-    OnlineFileRequest(const Resource& resource_,
+    OnlineFileRequest(const std::string& url_,
                        OnlineFileSource& fileSource_)
-        : resource(resource_),
+        : url(url_),
           fileSource(fileSource_) {
     }
 
     ~OnlineFileRequest() {
-        fileSource.cancel(resource, this);
+        fileSource.cancel(url, this);
     }
 
-    Resource resource;
+    std::string url;
     OnlineFileSource& fileSource;
 
     std::unique_ptr<WorkRequest> workRequest;
@@ -47,13 +52,13 @@ class OnlineFileRequestImpl : public util::noncopyable {
 public:
     using Callback = std::function<void (Response)>;
 
-    const Resource resource;
+    const std::string url;
     std::unique_ptr<WorkRequest> cacheRequest;
     RequestBase* realRequest = nullptr;
     std::unique_ptr<util::Timer> timerRequest;
 
-    inline OnlineFileRequestImpl(const Resource& resource_)
-        : resource(resource_) {}
+    inline OnlineFileRequestImpl(const std::string& url_)
+        : url(url_) {}
 
     ~OnlineFileRequestImpl();
 
@@ -102,8 +107,8 @@ public:
 
     void networkIsReachableAgain();
 
-    void add(Resource, FileRequest*, Callback);
-    void cancel(Resource, FileRequest*);
+    void add(const std::string&, FileRequest*, Callback);
+    void cancel(const std::string&, FileRequest*);
 
 private:
     void update(OnlineFileRequestImpl&);
@@ -111,7 +116,7 @@ private:
     void startRealRequest(OnlineFileRequestImpl&);
     void reschedule(OnlineFileRequestImpl&);
 
-    std::unordered_map<Resource, std::unique_ptr<OnlineFileRequestImpl>, Resource::Hash> pending;
+    std::unordered_map<std::string, std::unique_ptr<OnlineFileRequestImpl>> pending;
     FileCache* const cache;
     const std::string assetRoot;
     const std::unique_ptr<AssetContextBase> assetContext;
@@ -128,43 +133,65 @@ OnlineFileSource::OnlineFileSource(FileCache* cache, const std::string& root)
 
 OnlineFileSource::~OnlineFileSource() = default;
 
-std::unique_ptr<FileRequest> OnlineFileSource::request(const Resource& resource, Callback callback) {
-    if (!callback) {
-        throw util::MisuseException("FileSource callback can't be empty");
-    }
+std::unique_ptr<FileRequest> OnlineFileSource::requestStyle(const std::string& url, Callback callback) {
+    return request(mbgl::util::mapbox::normalizeStyleURL(url, accessToken), callback);
+}
 
-    std::string url;
+std::unique_ptr<FileRequest> OnlineFileSource::requestSource(const std::string& url, Callback callback) {
+    return request(mbgl::util::mapbox::normalizeSourceURL(url, accessToken), callback);
+}
 
-    switch (resource.kind) {
-    case Resource::Kind::Style:
-        url = mbgl::util::mapbox::normalizeStyleURL(resource.url, accessToken);
-        break;
+std::unique_ptr<FileRequest> OnlineFileSource::requestTile(const SourceInfo& source, const TileID& id, float pixelRatio, Callback callback) {
+    std::string url = util::mapbox::normalizeTileURL(source.tiles.at(0), source.url, source.type);
 
-    case Resource::Kind::Source:
-        url = util::mapbox::normalizeSourceURL(resource.url, accessToken);
-        break;
+    url = util::replaceTokens(url, [&](const std::string& token) -> std::string {
+        if (token == "z") {
+            return util::toString(std::min(id.z, static_cast<int8_t>(source.max_zoom)));
+        } else if (token == "x") {
+            return util::toString(id.x);
+        } else if (token == "y") {
+            return util::toString(id.y);
+        } else if (token == "prefix") {
+            std::string prefix{ 2 };
+            prefix[0] = "0123456789abcdef"[id.x % 16];
+            prefix[1] = "0123456789abcdef"[id.y % 16];
+            return prefix;
+        } else if (token == "ratio") {
+            return pixelRatio > 1.0 ? "@2x" : "";
+        } else {
+            return "";
+        }
+    });
 
-    case Resource::Kind::Glyphs:
-        url = util::mapbox::normalizeGlyphsURL(resource.url, accessToken);
-        break;
+    return request(url, callback);
+}
 
-    case Resource::Kind::SpriteImage:
-    case Resource::Kind::SpriteJSON:
-        url = util::mapbox::normalizeSpriteURL(resource.url, accessToken);
-        break;
+std::unique_ptr<FileRequest> OnlineFileSource::requestGlyphs(const std::string& urlTemplate, const std::string& fontStack, const GlyphRange& glyphRange, Callback callback) {
+    std::string url = util::replaceTokens(urlTemplate, [&](const std::string &name) -> std::string {
+        if (name == "fontstack") return util::percentEncode(fontStack);
+        if (name == "range") return util::toString(glyphRange.first) + "-" + util::toString(glyphRange.second);
+        return "";
+    });
 
-    default:
-        url = resource.url;
-    }
+    return request(mbgl::util::mapbox::normalizeGlyphsURL(url, accessToken), callback);
+}
 
-    Resource res { resource.kind, url };
-    auto req = std::make_unique<OnlineFileRequest>(res, *this);
-    req->workRequest = thread->invokeWithCallback(&Impl::add, callback, res, req.get());
+std::unique_ptr<FileRequest> OnlineFileSource::requestSpriteJSON(const std::string& urlBase, float pixelRatio, Callback callback) {
+    return request(mbgl::util::mapbox::normalizeSpriteURL(urlBase + (pixelRatio > 1 ? "@2x" : "") + ".json", accessToken), callback);
+}
+
+std::unique_ptr<FileRequest> OnlineFileSource::requestSpriteImage(const std::string& urlBase, float pixelRatio, Callback callback) {
+    return request(mbgl::util::mapbox::normalizeSpriteURL(urlBase + (pixelRatio > 1 ? "@2x" : "") + ".png", accessToken), callback);
+}
+
+std::unique_ptr<FileRequest> OnlineFileSource::request(const std::string& url, Callback callback) {
+    auto req = std::make_unique<OnlineFileRequest>(url, *this);
+    req->workRequest = thread->invokeWithCallback(&Impl::add, callback, url, req.get());
     return std::move(req);
 }
 
-void OnlineFileSource::cancel(const Resource& res, FileRequest* req) {
-    thread->invoke(&Impl::cancel, res, req);
+void OnlineFileSource::cancel(const std::string& url, FileRequest* req) {
+    thread->invoke(&Impl::cancel, url, req);
 }
 
 // ----- Impl -----
@@ -198,9 +225,9 @@ void OnlineFileSource::Impl::networkIsReachableAgain() {
     }
 }
 
-void OnlineFileSource::Impl::add(Resource resource, FileRequest* req, Callback callback) {
-    auto& request = *pending.emplace(resource,
-        std::make_unique<OnlineFileRequestImpl>(resource)).first->second;
+void OnlineFileSource::Impl::add(const std::string& url, FileRequest* req, Callback callback) {
+    auto& request = *pending.emplace(url,
+        std::make_unique<OnlineFileRequestImpl>(url)).first->second;
 
     // Trigger a potentially required refresh of this Request
     update(request);
@@ -232,7 +259,7 @@ void OnlineFileSource::Impl::update(OnlineFileRequestImpl& request) {
     } else if (!request.cacheRequest && !request.realRequest) {
         // There is no request in progress, and we don't have a response yet. This means we'll have
         // to start the request ourselves.
-        if (cache && !util::isAssetURL(request.resource.url)) {
+        if (cache && !util::isAssetURL(request.url)) {
             startCacheRequest(request);
         } else {
             startRealRequest(request);
@@ -246,7 +273,7 @@ void OnlineFileSource::Impl::startCacheRequest(OnlineFileRequestImpl& request) {
     // Check the cache for existing data so that we can potentially
     // revalidate the information without having to redownload everything.
     request.cacheRequest =
-        cache->get(request.resource.url, [this, &request](std::shared_ptr<Response> response) {
+        cache->get(request.url, [this, &request](std::shared_ptr<Response> response) {
             request.cacheRequest = nullptr;
             if (response) {
                 response->stale = response->isExpired();
@@ -280,7 +307,7 @@ void OnlineFileSource::Impl::startRealRequest(OnlineFileRequestImpl& request) {
         // In particular, we don't want to write a Canceled request, or one that failed due to
         // connection errors to the cache. Server errors are hopefully also temporary, so we're not
         // caching them either.
-        if (cache && !util::isAssetURL(request.resource.url) &&
+        if (cache && !util::isAssetURL(request.url) &&
             (!response->error || (response->error->reason == Response::Error::Reason::NotFound))) {
             // Store response in database. Make sure we only refresh the expires column if the data
             // didn't change.
@@ -288,7 +315,7 @@ void OnlineFileSource::Impl::startRealRequest(OnlineFileRequestImpl& request) {
             if (request.getResponse() && response->data == request.getResponse()->data) {
                 hint = FileCache::Hint::Refresh;
             }
-            cache->put(request.resource.url, response, hint);
+            cache->put(request.url, response, hint);
         }
 
         request.setResponse(response);
@@ -296,17 +323,17 @@ void OnlineFileSource::Impl::startRealRequest(OnlineFileRequestImpl& request) {
         reschedule(request);
     };
 
-    if (util::isAssetURL(request.resource.url)) {
+    if (util::isAssetURL(request.url)) {
         request.realRequest =
-            assetContext->createRequest(request.resource.url, callback, assetRoot);
+            assetContext->createRequest(request.url, callback, assetRoot);
     } else {
         request.realRequest =
-            httpContext->createRequest(request.resource.url, callback, request.getResponse());
+            httpContext->createRequest(request.url, callback, request.getResponse());
     }
 }
 
-void OnlineFileSource::Impl::cancel(Resource resource, FileRequest* req) {
-    auto it = pending.find(resource);
+void OnlineFileSource::Impl::cancel(const std::string& url, FileRequest* req) {
+    auto it = pending.find(url);
     if (it != pending.end()) {
         // If the number of dependent requests of the OnlineFileRequest drops to zero,
         // cancel the request and remove it from the pending list.

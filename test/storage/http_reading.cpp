@@ -16,7 +16,7 @@ TEST_F(Storage, HTTPTest) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    std::unique_ptr<FileRequest> req1 = fs.request({ Resource::Unknown, "http://127.0.0.1:3000/test" },
+    std::unique_ptr<FileRequest> req1 = fs.requestStyle("http://127.0.0.1:3000/test",
                [&](Response res) {
         req1.reset();
         EXPECT_TRUE(util::ThreadContext::currentlyOn(util::ThreadType::Main));
@@ -42,7 +42,7 @@ TEST_F(Storage, HTTP404) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    std::unique_ptr<FileRequest> req2 = fs.request({ Resource::Unknown, "http://127.0.0.1:3000/doesnotexist" },
+    std::unique_ptr<FileRequest> req2 = fs.requestStyle("http://127.0.0.1:3000/doesnotexist",
                [&](Response res) {
         req2.reset();
         EXPECT_TRUE(util::ThreadContext::currentlyOn(util::ThreadType::Main));
@@ -70,7 +70,7 @@ TEST_F(Storage, HTTP500) {
     util::RunLoop loop;
     OnlineFileSource fs(nullptr);
 
-    std::unique_ptr<FileRequest> req3 = fs.request({ Resource::Unknown, "http://127.0.0.1:3000/permanent-error" },
+    std::unique_ptr<FileRequest> req3 = fs.requestStyle("http://127.0.0.1:3000/permanent-error",
                [&](Response res) {
         req3.reset();
         EXPECT_TRUE(util::ThreadContext::currentlyOn(util::ThreadType::Main));
@@ -99,8 +99,7 @@ TEST_F(Storage, HTTPNoCallback) {
     OnlineFileSource fs(nullptr);
 
     try {
-        fs.request({ Resource::Unknown, "http://127.0.0.1:3000/test" },
-               nullptr);
+        fs.requestStyle("http://127.0.0.1:3000/test", nullptr);
     } catch (const util::MisuseException& ex) {
         EXPECT_EQ(std::string(ex.what()), "FileSource callback can't be empty");
     } catch (const std::exception&) {

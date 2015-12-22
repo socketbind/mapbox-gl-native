@@ -42,14 +42,22 @@ public:
     NodeMap(v8::Local<v8::Object>);
     ~NodeMap();
 
-    std::unique_ptr<mbgl::FileRequest> request(const mbgl::Resource&, Callback);
+    std::unique_ptr<mbgl::FileRequest> requestStyle(const std::string& url, Callback) override;
+    std::unique_ptr<mbgl::FileRequest> requestSource(const std::string& url, Callback) override;
+    std::unique_ptr<mbgl::FileRequest> requestTile(const mbgl::SourceInfo&, const mbgl::TileID&, float pixelRatio, Callback) override;
+    std::unique_ptr<mbgl::FileRequest> requestGlyphs(const std::string& urlTemplate, const std::string& fontStack, const mbgl::GlyphRange&, Callback) override;
+    std::unique_ptr<mbgl::FileRequest> requestSpriteJSON(const std::string& urlBase, float pixelRatio, Callback) override;
+    std::unique_ptr<mbgl::FileRequest> requestSpriteImage(const std::string& urlBase, float pixelRatio, Callback) override;
+
+    template <typename... Handles>
+    void request(const char * method, Callback callback, Handles... handles);
 
     mbgl::HeadlessView view;
     std::unique_ptr<mbgl::Map> map;
 
     std::exception_ptr error;
     mbgl::PremultipliedImage image;
-    std::unique_ptr<Nan::Callback> callback;
+    std::unique_ptr<Nan::Callback> renderCallback;
 
     // Async for delivering the notifications of render completion.
     uv_async_t *async;

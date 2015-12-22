@@ -17,17 +17,38 @@ mbgl.on('message', function(msg) {
 suite.run('native', {tests: tests}, function (style, options, callback) {
     var map = new mbgl.Map({
         ratio: options.pixelRatio,
-        request: function(req, callback) {
-            request(req.url, {encoding: null}, function (err, response, body) {
-                if (err) {
-                    callback(err);
-                } else if (response.statusCode != 200) {
-                    callback(response.statusMessage);
-                } else {
-                    callback(null, {data: body});
-                }
+        requestSource: function(url, callback) {
+            request(url, {encoding: null}, function (err, response, body) {
+                callback(err, {data: body});
             });
-        }
+        },
+        requestTile: function(urlTemplate, x, y, z, pixelRatio, callback) {
+            var url = urlTemplate
+              .replace('{x}', x)
+              .replace('{y}', y)
+              .replace('{z}', z);
+            request(url, {encoding: null}, function (err, response, body) {
+                callback(err, {data: body});
+            });
+        },
+        requestGlyphs: function(urlTemplate, fontstack, start, end, callback) {
+            var url = urlTemplate
+              .replace('{fontstack}', fontstack)
+              .replace('{range}', start + '-' + end);
+            request(url, {encoding: null}, function (err, response, body) {
+                callback(err, {data: body});
+            });
+        },
+        requestSpriteJSON: function(urlBase, pixelRatio, callback) {
+            request(urlBase + (pixelRatio > 1 ? '@2x.json' : '.json'), {encoding: null}, function (err, response, body) {
+                callback(err, {data: body});
+            });
+        },
+        requestSpriteImage: function(urlBase, pixelRatio, callback) {
+            request(urlBase + (pixelRatio > 1 ? '@2x.png' : '.png'), {encoding: null}, function (err, response, body) {
+                callback(err, {data: body});
+            });
+        },
     });
 
     var timedOut = false;

@@ -419,7 +419,7 @@ void SQLiteCache::Impl::put(const std::string& url, std::shared_ptr<const Respon
         putStmt->bind(6 /* expires */, response->expires.count());
         putStmt->bind(7 /* accessed */, toSeconds(SystemClock::now()).count());
 
-        std::string data = util::compress(*response->data);
+        std::string data = response->data ? util::compress(*response->data) : "";
 
         if (!data.empty() && data.size() < response->data->size()) {
             // Store the compressed data when it is smaller than the original

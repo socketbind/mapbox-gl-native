@@ -2,6 +2,8 @@
 #define MBGL_MAP_VECTOR_TILE
 
 #include <mbgl/map/geometry_tile.hpp>
+#include <mbgl/map/source_info.hpp>
+#include <mbgl/map/tile_id.hpp>
 #include <mbgl/util/pbf.hpp>
 
 #include <map>
@@ -66,7 +68,9 @@ public:
     std::unique_ptr<FileRequest> monitorTile(const GeometryTileMonitor::Callback&) override;
 
 private:
-    std::string url;
+    SourceInfo source;
+    TileID id;
+    float pixelRatio;
     std::shared_ptr<const std::string> data;
 };
 
