@@ -2892,7 +2892,7 @@ std::chrono::steady_clock::duration MGLDurationInSeconds(float duration)
     self.locationManager = [[CLLocationManager alloc] init];
 
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-    if ([CLLocationManager instancesRespondToSelector:@selector(requestWhenInUseAuthorization)])
+    if ([CLLocationManager instancesRespondToSelector:@selector(requestWhenInUseAuthorization)] && [CLLocationManager authorizationStatus] == kCLAuthorizationStatusNotDetermined)
     {
         BOOL hasLocationDescription = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSLocationAlwaysUsageDescription"] || [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSLocationWhenInUseUsageDescription"];
         if (!hasLocationDescription)
