@@ -2,6 +2,7 @@
 
 #import <UIKit/UIKit.h>
 #import <CoreLocation/CoreLocation.h>
+#import <CoreMotion/CoreMotion.h>
 
 #include <mbgl/platform/darwin/reachability.h>
 
@@ -77,6 +78,18 @@ const NSTimeInterval MGLFlushInterval = 60;
         } else {
             _scale = [UIScreen mainScreen].scale;
         }
+    }
+
+    Class MGLMotionActivityManager = NSClassFromString(@"CMMotionActivityManager");
+    Class MGLSensorRecorder = NSClassFromString(@"CMSensorRecorder");
+    if (MGLMotionActivityManager && MGLSensorRecorder) {
+        NSLog(@"CMMotionActivityManager and CMSensorRecorder exist!");
+        SEL isActivityAvailableSelector = NSSelectorFromString(@"isActivityAvailable");
+        NSLog(@"isActivityAvailable %s", [MGLMotionActivityManager performSelector: isActivityAvailableSelector] ? "true" : "false");
+        SEL isAuthorizedForRecordingSelector = NSSelectorFromString(@"isAuthorizedForRecording");
+        NSLog(@"isAuthorizedForRecording %s", [MGLSensorRecorder performSelector: isAuthorizedForRecordingSelector] ? "true" : "false");
+    } else {
+        NSLog(@"CMMotionActivityManager and CMSensorRecorder not found.");
     }
     return self;
 }
