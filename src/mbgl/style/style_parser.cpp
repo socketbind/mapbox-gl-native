@@ -255,7 +255,7 @@ std::unique_ptr<mapbox::geojsonvt::GeoJSONVT> StyleParser::parseGeoJSON(const JS
     }
 }
 
-std::unique_ptr<SourceInfo> StyleParser::parseTileJSON(const std::string& json, const std::string& sourceURL, SourceType type) {
+std::unique_ptr<SourceInfo> StyleParser::parseTileJSON(const std::string& json, const std::string& sourceURL, SourceType type, uint16_t tileSize) {
     rapidjson::GenericDocument<rapidjson::UTF8<>, rapidjson::CrtAllocator> document;
     document.Parse<0>(json.c_str());
 
@@ -269,10 +269,9 @@ std::unique_ptr<SourceInfo> StyleParser::parseTileJSON(const std::string& json, 
 
     // TODO: Remove this hack by delivering proper URLs in the TileJSON to begin with.
     if (type == SourceType::Raster && util::mapbox::isMapboxURL(sourceURL)) {
-        std::transform(result->tiles.begin(),
-                       result->tiles.end(),
-                       result->tiles.begin(),
-                       util::mapbox::normalizeRasterTileURL);
+        for (auto& url : result->tiles) {
+            url = util::mapbox::normalizeRasterTileURL(url, tileSize);
+        }
     }
 
     return result;

@@ -111,7 +111,7 @@ std::string normalizeGlyphsURL(const std::string& url, const std::string& access
     return baseURL + "fonts/v1/" + user + "/" + fontstack + "/" + range + "?access_token=" + accessToken;
 }
 
-std::string normalizeRasterTileURL(const std::string& url) {
+std::string normalizeRasterTileURL(const std::string& url, uint16_t tileSize) {
     std::string::size_type queryIdx = url.rfind("?");
     // Trim off the right end but never touch anything before the extension dot.
     std::string urlSansParams((queryIdx == std::string::npos) ? url : url.substr(0, queryIdx));
@@ -135,7 +135,19 @@ std::string normalizeRasterTileURL(const std::string& url) {
         normalizedURL.replace(extensionIdx + 1, 3, "webp");
     }
 #endif // !defined(__ANDROID__) && !defined(__APPLE__)
-    normalizedURL.insert(extensionIdx, "{ratio}");
+
+    // Mapbox raster sources always use the @2x suffix on the v4 tile API
+    // to ensure a maximum 512 image size.
+    std::string::size_type versionIdx = url.rfind("/v4/");
+    if (tileSize == 512 &&
+        versionIdx != std::string::npos &&
+        (normalizedURL.compare(extensionIdx + 1, 3, "png") == 0 ||
+        normalizedURL.compare(extensionIdx + 1, 3, "jpg") == 0 ||
+        normalizedURL.compare(extensionIdx + 1, 4, "webp") == 0)) {
+        normalizedURL.insert(extensionIdx, "@2x");
+    } else {
+        normalizedURL.insert(extensionIdx, "{ratio}");
+    }
     return normalizedURL;
 }
 
