@@ -63,6 +63,12 @@ const NSTimeInterval MGLFlushInterval = 60;
 @property (atomic) NSString *carrier;
 @property (atomic) CGFloat scale;
 
+// Determine if CoreMotion is linked, hardware is present and 
+// recording is authorized
+@property (atomic) BOOL MGLCoreMotion;
+@property (nonatomic, strong) CMMotionActivityManager *motionActivityManager;
+@property (atomic) CMMotionActivity *activity;
+
 @end
 
 @implementation MGLMapboxEventsData
@@ -79,17 +85,27 @@ const NSTimeInterval MGLFlushInterval = 60;
             _scale = [UIScreen mainScreen].scale;
         }
     }
-
     Class MGLMotionActivityManager = NSClassFromString(@"CMMotionActivityManager");
     Class MGLSensorRecorder = NSClassFromString(@"CMSensorRecorder");
     if (MGLMotionActivityManager && MGLSensorRecorder) {
-        NSLog(@"CMMotionActivityManager and CMSensorRecorder exist!");
         SEL isActivityAvailableSelector = NSSelectorFromString(@"isActivityAvailable");
-        NSLog(@"isActivityAvailable %s", [MGLMotionActivityManager performSelector: isActivityAvailableSelector] ? "true" : "false");
         SEL isAuthorizedForRecordingSelector = NSSelectorFromString(@"isAuthorizedForRecording");
-        NSLog(@"isAuthorizedForRecording %s", [MGLSensorRecorder performSelector: isAuthorizedForRecordingSelector] ? "true" : "false");
-    } else {
-        NSLog(@"CMMotionActivityManager and CMSensorRecorder not found.");
+        if ([MGLMotionActivityManager performSelector: isActivityAvailableSelector] && [MGLSensorRecorder performSelector: isAuthorizedForRecordingSelector]) {
+            _MGLCoreMotion = true;
+
+            _motionActivityManager = [[MGLMotionActivityManager alloc] init];
+
+            // Register for CoreMotion notifications
+            SEL startActivityUpdatesSelector = NSSelectorFromString(@"startActivityUpdatesToQueue:withHandler:");
+            Class MGLMotionActivity = NSClassFromString(@"CMMotionActivity");
+
+            [_motionActivityManager performSelector: startActivityUpdatesSelector
+                withObject: [NSOperationQueue mainQueue]
+                withObject: ^(CMMotionActivity *activity){
+                    NSLog(@"Got a core motion update");
+                    _activity = activity;
+                }];
+        }
     }
     return self;
 }
@@ -529,6 +545,17 @@ const NSTimeInterval MGLFlushInterval = 60;
         [evt setValue:[strongSelf applicationState] forKey:@"applicationState"];
 
         [evt setValue:@([strongSelf contentSizeScale]) forKey:@"accessibilityFontScale"];
+
+        // TODO: Add activity and confidence if CoreMotion is linked
+        if (strongSelf.data.MGLCoreMotion) {
+            NSLog(@"Current activity date is %f", strongSelf.data.activity.timestamp);
+            NSLog(@"Confidence: %i", strongSelf.data.activity.confidence);
+            NSLog(@"Unknown: %i", strongSelf.data.activity.unknown ? 1 : 0);
+            NSLog(@"Stationary: %i", strongSelf.data.activity.stationary ? 1 : 0);
+            NSLog(@"Walking: %i", strongSelf.data.activity.walking ? 1 : 0);
+            NSLog(@"Running: %i", strongSelf.data.activity.running ? 1 : 0);
+            NSLog(@"Automotive: %i", strongSelf.data.activity.automotive ? 1 : 0);
+        }
 
         // Make Immutable Version
         NSDictionary *finalEvent = [NSDictionary dictionaryWithDictionary:evt];
