@@ -630,7 +630,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void removeAnnotations() {
         mMarkerList.clear();
-        mMapboxMap.removeAllAnnotations();
+        mMapboxMap.removeAnnotations();
     }
 
     private void addCustomLayer() {
