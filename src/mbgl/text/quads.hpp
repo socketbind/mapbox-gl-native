@@ -2,7 +2,7 @@
 #define MBGL_TEXT_QUADS
 
 #include <mbgl/text/glyph.hpp>
-#include <mbgl/util/vec.hpp>
+#include <mbgl/util/geo.hpp>
 
 #include <vector>
 

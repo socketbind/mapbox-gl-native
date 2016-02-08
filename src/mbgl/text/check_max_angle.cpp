@@ -1,4 +1,6 @@
 #include <mbgl/text/check_max_angle.hpp>
+#include <mbgl/util/math.hpp>
+
 #include <queue>
 
 namespace mbgl{

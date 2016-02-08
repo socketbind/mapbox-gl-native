@@ -2,7 +2,7 @@
 #define MBGL_TEXT_CHECK_MAX_ANGLE
 
 #include <mbgl/geometry/anchor.hpp>
-#include <mbgl/util/math.hpp>
+#include <mbgl/util/geo.hpp>
 
 namespace mbgl {
 

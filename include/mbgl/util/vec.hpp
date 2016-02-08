@@ -119,9 +119,6 @@ struct vec4 {
     }
 };
 
-
-using Coordinate = vec2<int16_t>;
-
 } // namespace mbgl
 
 #endif

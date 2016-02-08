@@ -5,10 +5,14 @@
 #include <mbgl/util/constants.hpp>
 
 #include <cmath>
+#include <vector>
 
 namespace mbgl {
 
 class TileID;
+
+// Normalized vector tile coordinate.
+using Coordinate = vec2<int16_t>;
 
 using PrecisionPoint = vec2<double>;
 

@@ -6,7 +6,7 @@
 #include <mbgl/style/value.hpp>
 #include <mbgl/util/chrono.hpp>
 #include <mbgl/util/ptr.hpp>
-#include <mbgl/util/vec.hpp>
+#include <mbgl/util/geo.hpp>
 #include <mbgl/util/noncopyable.hpp>
 #include <mbgl/util/optional.hpp>
 

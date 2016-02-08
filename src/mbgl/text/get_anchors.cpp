@@ -2,6 +2,7 @@
 #include <mbgl/text/check_max_angle.hpp>
 #include <mbgl/util/constants.hpp>
 #include <mbgl/util/interpolate.hpp>
+#include <mbgl/util/math.hpp>
 
 #include <cmath>
 
