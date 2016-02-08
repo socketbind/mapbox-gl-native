@@ -95,7 +95,7 @@ GeometryCollection VectorTileFeature::getGeometries() const {
     GeometryCollection lines;
 
     lines.emplace_back();
-    std::vector<Coordinate>* line = &lines.back();
+    Coordinates* line = &lines.back();
 
     while (data.data < data.end) {
         if (length == 0) {

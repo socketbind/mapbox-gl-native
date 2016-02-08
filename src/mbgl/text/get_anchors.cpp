@@ -8,7 +8,7 @@
 
 namespace mbgl {
 
-Anchors resample(const std::vector<Coordinate> &line, const float offset, const float spacing,
+Anchors resample(const Coordinates &line, const float offset, const float spacing,
         const float angleWindowSize, const float maxAngle, const float labelLength, const bool continuedLine, const bool placeAtMiddle) {
 
     const float halfLabelLength = labelLength / 2.0f;
@@ -66,7 +66,7 @@ Anchors resample(const std::vector<Coordinate> &line, const float offset, const 
     return anchors;
 }
 
-Anchors getAnchors(const std::vector<Coordinate> &line, float spacing,
+Anchors getAnchors(const Coordinates &line, float spacing,
         const float maxAngle, const float textLeft, const float textRight,
         const float iconLeft, const float iconRight,
         const float glyphSize, const float boxScale, const float overscaling) {

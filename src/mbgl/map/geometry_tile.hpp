@@ -24,7 +24,7 @@ enum class FeatureType : uint8_t {
     Polygon = 3
 };
 
-typedef std::vector<std::vector<Coordinate>> GeometryCollection;
+using GeometryCollection = std::vector<Coordinates>;
 
 class GeometryTileFeature : private util::noncopyable {
 public:

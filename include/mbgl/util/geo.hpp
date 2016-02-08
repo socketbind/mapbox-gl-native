@@ -13,6 +13,7 @@ class TileID;
 
 // Normalized vector tile coordinate.
 using Coordinate = vec2<int16_t>;
+using Coordinates = std::vector<Coordinate>;
 
 using PrecisionPoint = vec2<double>;
 

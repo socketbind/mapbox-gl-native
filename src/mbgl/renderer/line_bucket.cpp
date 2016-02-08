@@ -25,7 +25,7 @@ void LineBucket::addGeometry(const GeometryCollection& geometryCollection) {
     }
 }
 
-void LineBucket::addGeometry(const std::vector<Coordinate>& vertices) {
+void LineBucket::addGeometry(const Coordinates& vertices) {
     const GLsizei len = [&vertices] {
         GLsizei l = static_cast<GLsizei>(vertices.size());
         // If the line has duplicate vertices at the end, adjust length to remove them.

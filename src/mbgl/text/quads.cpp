@@ -11,7 +11,7 @@ namespace mbgl {
 const float globalMinScale = 0.5f; // underscale by 1 zoom level
 
 SymbolQuads getIconQuads(Anchor& anchor, const PositionedIcon& shapedIcon,
-        const std::vector<Coordinate>& line, const SymbolLayoutProperties& layout,
+        const Coordinates& line, const SymbolLayoutProperties& layout,
         const bool alongLine) {
 
     auto image = *(shapedIcon.image);
@@ -74,7 +74,7 @@ struct GlyphInstance {
 typedef std::vector<GlyphInstance> GlyphInstances;
 
 void getSegmentGlyphs(std::back_insert_iterator<GlyphInstances> glyphs, Anchor &anchor,
-        float offset, const std::vector<Coordinate> &line, int segment, bool forward) {
+        float offset, const Coordinates &line, int segment, bool forward) {
 
     const bool upsideDown = !forward;
 
@@ -132,7 +132,7 @@ void getSegmentGlyphs(std::back_insert_iterator<GlyphInstances> glyphs, Anchor &
 }
 
 SymbolQuads getGlyphQuads(Anchor& anchor, const Shaping& shapedText,
-        const float boxScale, const std::vector<Coordinate>& line, const SymbolLayoutProperties& layout,
+        const float boxScale, const Coordinates& line, const SymbolLayoutProperties& layout,
         const bool alongLine, const GlyphPositions& face) {
 
     const float textRotate = layout.text.rotate * util::DEG2RAD;

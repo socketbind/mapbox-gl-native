@@ -12,14 +12,14 @@ struct Corner {
     float angleDelta;
 };
 
-bool checkMaxAngle(const std::vector<Coordinate> &line, Anchor &anchor, const float labelLength,
+bool checkMaxAngle(const Coordinates& line, Anchor& anchor, const float labelLength,
         const float windowSize, const float maxAngle) {
 
     // horizontal labels always pass
     if (anchor.segment < 0) return true;
 
     Coordinate anchorPoint = Coordinate{ (int16_t)anchor.x, (int16_t)anchor.y };
-    Coordinate &p = anchorPoint;
+    Coordinate& p = anchorPoint;
     int index = anchor.segment + 1;
     float anchorDistance = 0;
 

@@ -3,10 +3,10 @@
 namespace mbgl {
 namespace util {
 
-std::vector<std::vector<Coordinate>> clipLines(const std::vector<std::vector<Coordinate>> &lines,
+GeometryCollection clipLines(const GeometryCollection &lines,
         const int16_t x1, const int16_t y1, const int16_t x2, const int16_t y2) {
 
-    std::vector<std::vector<Coordinate>> clippedLines;
+    GeometryCollection clippedLines;
 
     for (auto& line : lines) {
 
