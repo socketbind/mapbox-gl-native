@@ -13,6 +13,7 @@
 namespace mbgl {
 
 using namespace mapbox::sqlite;
+using namespace std::literals::chrono_literals;
 
 // If you change the schema you must write a migration from the previous version.
 static const uint32_t schemaVersion = 2;
@@ -37,6 +38,7 @@ void OfflineDatabase::ensureSchema() {
     if (path != ":memory:") {
         try {
             db = std::make_unique<Database>(path.c_str(), ReadWrite);
+            db->setBusyTimeout(0ms);
 
             {
                 Statement userVersionStmt(db->prepare("PRAGMA user_version"));
@@ -51,12 +53,15 @@ void OfflineDatabase::ensureSchema() {
 
             removeExisting();
             db = std::make_unique<Database>(path.c_str(), ReadWrite | Create);
+            db->setBusyTimeout(0ms);
         } catch (mapbox::sqlite::Exception& ex) {
             if (ex.code == SQLITE_CANTOPEN) {
                 db = std::make_unique<Database>(path.c_str(), ReadWrite | Create);
+                db->setBusyTimeout(0ms);
             } else if (ex.code == SQLITE_NOTADB) {
                 removeExisting();
                 db = std::make_unique<Database>(path.c_str(), ReadWrite | Create);
+                db->setBusyTimeout(0ms);
             }
         }
     }
@@ -64,6 +69,7 @@ void OfflineDatabase::ensureSchema() {
     #include "offline_schema.cpp.include"
 
     db = std::make_unique<Database>(path.c_str(), ReadWrite | Create);
+    db->setBusyTimeout(0ms);
     db->exec(schema);
     db->exec("PRAGMA user_version = " + util::toString(schemaVersion));
 }

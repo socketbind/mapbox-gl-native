@@ -59,6 +59,17 @@ Database::operator bool() const {
     return db != nullptr;
 }
 
+void Database::setBusyTimeout(std::chrono::milliseconds timeout) {
+    assert(db);
+    if (timeout.count() > std::numeric_limits<int>::max()) {
+        throw std::range_error("value too long for sqlite3_busy_timeout");
+    }
+    const int err = sqlite3_busy_timeout(db, int(timeout.count()));
+    if (err != SQLITE_OK) {
+        throw Exception { err, sqlite3_errmsg(db) };
+    }
+}
+
 void Database::exec(const std::string &sql) {
     assert(db);
     char *msg = nullptr;
