@@ -12,7 +12,6 @@
 #include <mbgl/storage/response.hpp>
 #include <mbgl/util/math.hpp>
 #include <mbgl/util/box.hpp>
-#include <mbgl/util/tile_coordinate.hpp>
 #include <mbgl/storage/file_source.hpp>
 #include <mbgl/style/style_layer.hpp>
 #include <mbgl/style/style_update_parameters.hpp>
@@ -322,14 +321,14 @@ std::forward_list<TileID> Source::coveringTiles(const TransformState& state) con
 
     // Map four viewport corners to pixel coordinates
     box points = state.cornersToBox(z);
-    const TileCoordinate center = state.pointToCoordinate({ state.getWidth() / 2.0f, state.getHeight()/ 2.0f }).zoomTo(z);
+    const TileID center = state.pointToCoordinate({ state.getWidth() / 2.0f, state.getHeight()/ 2.0f }).zoomTo(z);
 
     std::forward_list<TileID> covering_tiles = tileCover(z, points, reparseOverscaled ? actualZ : z);
 
     covering_tiles.sort([&center](const TileID& a, const TileID& b) {
         // Sorts by distance from the box center
-        return std::fabs(a.x - center.column) + std::fabs(a.y - center.row) <
-               std::fabs(b.x - center.column) + std::fabs(b.y - center.row);
+        return std::fabs(a.x - center.x) + std::fabs(a.y - center.y) <
+               std::fabs(b.x - center.x) + std::fabs(b.y - center.y);
     });
 
     return covering_tiles;

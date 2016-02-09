@@ -47,6 +47,16 @@ public:
         return y < rhs.y;
     }
 
+    inline TileID zoomTo(double target) const {
+        double scale = std::pow(2, target - z);
+        return TileID { target, x * scale, y * scale };
+    }
+
+    TileID operator-(const TileID& rhs) const {
+        TileID zoomed = rhs.zoomTo(z);
+        return TileID { z, x - zoomed.x, y - zoomed.y };
+    };
+
     TileID parent(double z, double sourceMaxZoom) const;
     TileID normalized() const;
     std::forward_list<TileID>

@@ -1,7 +1,6 @@
 #include <mbgl/util/tile_cover.hpp>
-#include <mbgl/util/vec.hpp>
+#include <mbgl/util/geo.hpp>
 #include <mbgl/util/box.hpp>
-#include <mbgl/util/tile_coordinate.hpp>
 
 namespace mbgl {
 
@@ -13,8 +12,8 @@ struct edge {
     double x1 = 0, y1 = 0;
     double dx = 0, dy = 0;
 
-    edge(vec2<double> a, vec2<double> b) {
-        if (a.y > b.y) { std::swap(a, b); }
+    edge(PrecisionPoint a, PrecisionPoint b) {
+        if (a.y > b.y) std::swap(a, b);
         x0 = a.x;
         y0 = a.y;
         x1 = b.x;
@@ -51,7 +50,7 @@ static void scanSpans(edge e0, edge e1, int32_t ymin, int32_t ymax, ScanLine sca
 }
 
 // scan-line conversion
-static void scanTriangle(const mbgl::vec2<double> a, const mbgl::vec2<double> b, const mbgl::vec2<double> c, int32_t ymin, int32_t ymax, ScanLine& scanLine) {
+static void scanTriangle(const PrecisionPoint& a, const PrecisionPoint& b, const PrecisionPoint& c, int32_t ymin, int32_t ymax, ScanLine& scanLine) {
     edge ab = edge(a, b);
     edge bc = edge(b, c);
     edge ca = edge(c, a);
@@ -79,10 +78,10 @@ std::forward_list<TileID> tileCover(int8_t z, const mbgl::box &bounds, int8_t ac
         }
     };
 
-    mbgl::vec2<double> tl = { bounds.tl.column, bounds.tl.row };
-    mbgl::vec2<double> tr = { bounds.tr.column, bounds.tr.row };
-    mbgl::vec2<double> br = { bounds.br.column, bounds.br.row };
-    mbgl::vec2<double> bl = { bounds.bl.column, bounds.bl.row };
+    PrecisionPoint tl { bounds.tl.x, bounds.tl.y };
+    PrecisionPoint tr { bounds.tr.x, bounds.tr.y };
+    PrecisionPoint bl { bounds.bl.x, bounds.bl.y };
+    PrecisionPoint br { bounds.br.x, bounds.br.y };
 
     // Divide the screen up in two triangles and scan each of them:
     // \---+

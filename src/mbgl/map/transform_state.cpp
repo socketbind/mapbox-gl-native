@@ -2,7 +2,6 @@
 #include <mbgl/map/tile_id.hpp>
 #include <mbgl/util/constants.hpp>
 #include <mbgl/util/box.hpp>
-#include <mbgl/util/tile_coordinate.hpp>
 #include <mbgl/util/interpolate.hpp>
 #include <mbgl/util/math.hpp>
 
@@ -264,34 +263,34 @@ LatLng TransformState::pointToLatLng(const PrecisionPoint& point) const {
     return coordinateToLatLng(pointToCoordinate(point));
 }
 
-TileCoordinate TransformState::latLngToCoordinate(const LatLng& latLng) const {
-    return {
+TileID TransformState::latLngToCoordinate(const LatLng& latLng) const {
+    return TileID {
+        getZoom(),
         lngX(latLng.longitude) / util::tileSize,
-        latY(latLng.latitude) / util::tileSize,
-        getZoom()
+        latY(latLng.latitude) / util::tileSize
     };
 }
 
-LatLng TransformState::coordinateToLatLng(const TileCoordinate& coord) const {
-    const double worldSize_ = zoomScale(coord.zoom);
+LatLng TransformState::coordinateToLatLng(const TileID& coord) const {
+    const double worldSize_ = zoomScale(coord.z);
     LatLng latLng = {
-        yLat(coord.row, worldSize_),
-        xLng(coord.column, worldSize_)
+        yLat(coord.y, worldSize_),
+        xLng(coord.x, worldSize_)
     };
     while (latLng.longitude < -util::LONGITUDE_MAX) latLng.longitude += 360.0f;
     while (latLng.longitude > util::LONGITUDE_MAX) latLng.longitude -= 360.0f;
     return latLng;
 }
 
-PrecisionPoint TransformState::coordinateToPoint(const TileCoordinate& coord) const {
-    mat4 mat = coordinatePointMatrix(coord.zoom);
+PrecisionPoint TransformState::coordinateToPoint(const TileID& coord) const {
+    mat4 mat = coordinatePointMatrix(coord.z);
     vec4<> p;
-    vec4<> c = { coord.column, coord.row, 0, 1 };
+    vec4<> c = { coord.x, coord.y, 0, 1 };
     matrix::transformMat4(p, c, mat);
     return { p.x / p.w, height - p.y / p.w };
 }
 
-TileCoordinate TransformState::pointToCoordinate(const PrecisionPoint& point) const {
+TileID TransformState::pointToCoordinate(const PrecisionPoint& point) const {
 
     float targetZ = 0;
     const double tileZoom = getZoom();
@@ -327,7 +326,7 @@ TileCoordinate TransformState::pointToCoordinate(const PrecisionPoint& point) co
 
     double t = z0 == z1 ? 0 : (targetZ - z0) / (z1 - z0);
 
-    return { util::interpolate(x0, x1, t), util::interpolate(y0, y1, t), tileZoom };
+    return TileID { tileZoom, util::interpolate(x0, x1, t), util::interpolate(y0, y1, t) };
 }
 
 mat4 TransformState::coordinatePointMatrix(double z) const {
@@ -380,15 +379,15 @@ void TransformState::moveLatLng(const LatLng& latLng, const PrecisionPoint& anch
     auto coordAtPoint = pointToCoordinate(anchor);
     auto coordCenter = pointToCoordinate({ width / 2.0f, height / 2.0f });
     
-    float columnDiff = coordAtPoint.column - coord.column;
-    float rowDiff = coordAtPoint.row - coord.row;
+    float columnDiff = coordAtPoint.x - coord.x;
+    float rowDiff = coordAtPoint.y - coord.y;
     
-    auto newLatLng = coordinateToLatLng({
-        coordCenter.column - columnDiff,
-        coordCenter.row - rowDiff,
-        coordCenter.zoom
+    auto newLatLng = coordinateToLatLng(TileID {
+        coordCenter.z,
+        coordCenter.x - columnDiff,
+        coordCenter.y - rowDiff,
     });
-    setLatLngZoom(newLatLng, coordCenter.zoom);
+    setLatLngZoom(newLatLng, coordCenter.z);
 }
 
 void TransformState::setLatLngZoom(const LatLng &latLng, double zoom) {

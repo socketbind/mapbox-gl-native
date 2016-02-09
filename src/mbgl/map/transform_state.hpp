@@ -15,7 +15,6 @@ namespace mbgl {
 
 class TileID;
 struct box;
-struct TileCoordinate;
 
 class TransformState {
     friend class Transform;
@@ -67,11 +66,11 @@ public:
     PrecisionPoint latLngToPoint(const LatLng&) const;
     LatLng pointToLatLng(const PrecisionPoint&) const;
 
-    TileCoordinate latLngToCoordinate(const LatLng&) const;
-    LatLng coordinateToLatLng(const TileCoordinate&) const;
+    TileID latLngToCoordinate(const LatLng&) const;
+    LatLng coordinateToLatLng(const TileID&) const;
 
-    PrecisionPoint coordinateToPoint(const TileCoordinate&) const;
-    TileCoordinate pointToCoordinate(const PrecisionPoint&) const;
+    PrecisionPoint coordinateToPoint(const TileID&) const;
+    TileID pointToCoordinate(const PrecisionPoint&) const;
 
 private:
     bool rotatedNorth() const;
