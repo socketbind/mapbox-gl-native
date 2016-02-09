@@ -13,13 +13,13 @@ namespace mbgl {
 class TileID {
 public:
     const int16_t w = 0;
-    const int8_t z = 0;
-    const int32_t x = 0, y = 0;
-    const int8_t sourceZ;
-    const float overscaling;
+    const double z = 0;
+    const double x = 0, y = 0;
+    const double sourceZ;
+    const double overscaling;
 
-    inline explicit TileID(int8_t z_, int32_t x_, int32_t y_, int8_t sourceZ_)
-        : w((x_ < 0 ? x_ - (1 << z_) + 1 : x_) / (1 << z_)), z(z_), x(x_), y(y_),
+    inline explicit TileID(double z_, double x_, double y_, double sourceZ_ = 0)
+        : w((x_ < 0 ? x_ - std::pow(2, z_) + 1 : x_) / std::pow(2, z_)), z(z_), x(x_), y(y_),
         sourceZ(sourceZ_), overscaling(std::pow(2, z_ - sourceZ_)) {}
 
     inline uint64_t to_uint64() const {
@@ -47,10 +47,10 @@ public:
         return y < rhs.y;
     }
 
-    TileID parent(int8_t z, int8_t sourceMaxZoom) const;
+    TileID parent(double z, double sourceMaxZoom) const;
     TileID normalized() const;
     std::forward_list<TileID>
-    children(int8_t sourceMaxZoom = std::numeric_limits<int8_t>::max()) const;
+    children(double sourceMaxZoom = std::numeric_limits<double>::max()) const;
     bool isChildOf(const TileID&) const;
     operator std::string() const;
 

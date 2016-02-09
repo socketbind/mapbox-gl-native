@@ -58,22 +58,17 @@ void parseTileJSONMember(const JSValue& value, std::string& target, const char* 
     target = { property.GetString(), property.GetStringLength() };
 }
 
-void parseTileJSONMember(const JSValue& value, uint16_t& target, const char* name) {
+void parseTileJSONMember(const JSValue& value, double& target, const char* name) {
     if (!value.HasMember(name)) {
         return;
     }
 
     const JSValue& property = value[name];
-    if (!property.IsUint()) {
+    if (!property.IsNumber()) {
         return;
     }
 
-    unsigned int uint = property.GetUint();
-    if (uint > std::numeric_limits<uint16_t>::max()) {
-        return;
-    }
-
-    target = uint;
+    target = property.GetDouble();
 }
 
 template <size_t N>
@@ -284,8 +279,13 @@ std::unique_ptr<SourceInfo> StyleParser::parseTileJSON(const JSValue& value) {
     parseTileJSONMember(value, info->minZoom, "minzoom");
     parseTileJSONMember(value, info->maxZoom, "maxzoom");
     parseTileJSONMember(value, info->attribution, "attribution");
-    parseTileJSONMember(value, info->center, "center");
-    parseTileJSONMember(value, info->bounds, "bounds");
+
+    std::array<double, 4> target;
+    parseTileJSONMember(value, target, "center");
+    info->center = { target[0], target[1], target[2] };
+    parseTileJSONMember(value, target, "bounds");
+    info->bounds = { target[0], target[1], target[2], target[3] };
+
     return info;
 }
 

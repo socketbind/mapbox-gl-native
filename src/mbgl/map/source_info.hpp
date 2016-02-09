@@ -3,11 +3,10 @@
 
 #include <mbgl/style/types.hpp>
 #include <mbgl/util/constants.hpp>
+#include <mbgl/util/vec.hpp>
 
-#include <array>
 #include <vector>
 #include <string>
-#include <cstdint>
 
 namespace mbgl {
 
@@ -16,11 +15,11 @@ class TileID;
 class SourceInfo {
 public:
     std::vector<std::string> tiles;
-    uint16_t minZoom = 0;
-    uint16_t maxZoom = 22;
+    double minZoom = util::MIN_ZOOM;
+    double maxZoom = util::MAX_ZOOM;
     std::string attribution;
-    std::array<double, 3> center = { { 0, 0, 0 } };
-    std::array<double, 4> bounds = { { -util::LONGITUDE_MAX, -util::LATITUDE_MAX, util::LONGITUDE_MAX, util::LATITUDE_MAX } };
+    vec3<> center = { 0, 0, 0 };
+    vec4<> bounds = { -util::LONGITUDE_MAX, -util::LATITUDE_MAX, util::LONGITUDE_MAX, util::LATITUDE_MAX };
 };
 
 } // namespace mbgl

@@ -14,10 +14,10 @@ void PointAnnotationImpl::updateLayer(const TileID& tileID, AnnotationTileLayer&
 
     const uint16_t extent = 4096;
     const mbgl::PrecisionPoint pp = point.position.project();
-    const uint32_t z2 = 1 << tileID.z;
-    const uint32_t x = pp.x * z2;
-    const uint32_t y = pp.y * z2;
-    const Coordinate coordinate(extent * (pp.x * z2 - x), extent * (pp.y * z2 - y));
+    const auto scale = std::pow(2, tileID.z);
+    const auto x = std::floor(pp.x * scale);
+    const auto y = std::floor(pp.y * scale);
+    const Coordinate coordinate(extent * (pp.x * scale - x), extent * (pp.y * scale - y));
 
     layer.features.emplace_back(
         std::make_shared<const AnnotationTileFeature>(FeatureType::Point,

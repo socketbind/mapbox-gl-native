@@ -5,7 +5,7 @@
 
 namespace mbgl {
 
-TileID TileID::parent(int8_t parent_z, int8_t sourceMaxZoom) const {
+TileID TileID::parent(double parent_z, double sourceMaxZoom) const {
     assert(parent_z < z);
     auto newX = x;
     auto newY = y;
@@ -22,7 +22,7 @@ TileID TileID::parent(int8_t parent_z, int8_t sourceMaxZoom) const {
     return TileID{parent_z, newX, newY, parent_z > sourceMaxZoom ? sourceMaxZoom : parent_z};
 }
 
-std::forward_list<TileID> TileID::children(int8_t sourceMaxZoom) const {
+std::forward_list<TileID> TileID::children(double sourceMaxZoom) const {
     auto childZ = z + 1;
 
     std::forward_list<TileID> child_ids;
@@ -43,8 +43,8 @@ std::forward_list<TileID> TileID::children(int8_t sourceMaxZoom) const {
 }
 
 TileID TileID::normalized() const {
-    int32_t dim = std::pow(2, sourceZ);
-    int32_t nx = x, ny = y;
+    double dim = std::pow(2, sourceZ);
+    double nx = x, ny = y;
     while (nx < 0) nx += dim;
     while (nx >= dim) nx -= dim;
     return TileID { z, nx, ny, sourceZ};
@@ -54,9 +54,9 @@ bool TileID::isChildOf(const TileID &parent_id) const {
     if (parent_id.z >= z || parent_id.w != w) {
         return false;
     }
-    int32_t scale = std::pow(2, z - parent_id.z);
-    return parent_id.x == ((x < 0 ? x - scale + 1 : x) / scale) &&
-           parent_id.y == y / scale;
+    double scale = std::pow(2, z - parent_id.z);
+    return parent_id.x == std::floor(x / scale) &&
+           parent_id.y == std::floor(y / scale);
 }
 
 TileID::operator std::string() const {
