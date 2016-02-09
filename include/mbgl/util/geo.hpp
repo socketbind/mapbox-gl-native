@@ -2,6 +2,7 @@
 #define MBGL_UTIL_GEO
 
 #include <mbgl/util/vec.hpp>
+#include <mbgl/util/constants.hpp>
 
 #include <cmath>
 
@@ -54,7 +55,8 @@ class LatLngBounds {
 public:
     // Return a bounds covering the entire (unwrapped) world.
     static LatLngBounds world() {
-        return LatLngBounds({-90, -180}, {90, 180});
+        return { { -util::LATITUDE_MAX, -util::LONGITUDE_MAX },
+                 { util::LATITUDE_MAX, util::LONGITUDE_MAX } };
     }
 
     // Return the bounds consisting of the single point.

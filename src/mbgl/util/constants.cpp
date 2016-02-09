@@ -14,11 +14,12 @@ const float mbgl::util::tileSize = 512.0f;
  */
 const int32_t mbgl::util::EXTENT = 8192;
 
-const double mbgl::util::DEG2RAD = M_PI / 180.0;
-const double mbgl::util::RAD2DEG = 180.0 / M_PI;
+const double mbgl::util::DEG2RAD = M_PI / 180;
+const double mbgl::util::RAD2DEG = 180 / M_PI;
 const double mbgl::util::M2PI = 2 * M_PI;
 const double mbgl::util::EARTH_RADIUS_M = 6378137;
-const double mbgl::util::LATITUDE_MAX = 85.05112878;
+const double mbgl::util::LATITUDE_MAX = 85.051128779806604;
+const double mbgl::util::LONGITUDE_MAX = 180;
 const double mbgl::util::PITCH_MAX = M_PI / 3;
 const double mbgl::util::MIN_ZOOM = 0.0;
 const double mbgl::util::MAX_ZOOM = 25.5;
