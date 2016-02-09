@@ -264,7 +264,13 @@ uint64_t OfflineDatabase::putTile(const Resource::TileData& tile, const Response
         stmt.bind(5, tile.x);
         stmt.bind(6, tile.y);
         stmt.bind(7, tile.z);
-        stmt.run();
+
+        try {
+            stmt.run();
+        } catch (...) {
+            Log::Error(Event::Database, util::toString(std::current_exception()));
+        }
+
         return 0;
     } else {
         mapbox::sqlite::Statement& stmt1 = getStatement(
