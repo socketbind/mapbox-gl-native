@@ -12,7 +12,7 @@ struct edge {
     double x1 = 0, y1 = 0;
     double dx = 0, dy = 0;
 
-    edge(PrecisionPoint a, PrecisionPoint b) {
+    edge(ScreenCoordinate a, ScreenCoordinate b) {
         if (a.y > b.y) std::swap(a, b);
         x0 = a.x;
         y0 = a.y;
@@ -50,7 +50,7 @@ static void scanSpans(edge e0, edge e1, int32_t ymin, int32_t ymax, ScanLine sca
 }
 
 // scan-line conversion
-static void scanTriangle(const PrecisionPoint& a, const PrecisionPoint& b, const PrecisionPoint& c, int32_t ymin, int32_t ymax, ScanLine& scanLine) {
+static void scanTriangle(const ScreenCoordinate& a, const ScreenCoordinate& b, const ScreenCoordinate& c, int32_t ymin, int32_t ymax, ScanLine& scanLine) {
     edge ab = edge(a, b);
     edge bc = edge(b, c);
     edge ca = edge(c, a);
@@ -78,10 +78,10 @@ std::forward_list<TileID> tileCover(int8_t z, const mbgl::box &bounds, int8_t ac
         }
     };
 
-    PrecisionPoint tl { bounds.tl.x, bounds.tl.y };
-    PrecisionPoint tr { bounds.tr.x, bounds.tr.y };
-    PrecisionPoint bl { bounds.bl.x, bounds.bl.y };
-    PrecisionPoint br { bounds.br.x, bounds.br.y };
+    ScreenCoordinate tl { bounds.tl.x, bounds.tl.y };
+    ScreenCoordinate tr { bounds.tr.x, bounds.tr.y };
+    ScreenCoordinate bl { bounds.bl.x, bounds.bl.y };
+    ScreenCoordinate br { bounds.br.x, bounds.br.y };
 
     // Divide the screen up in two triangles and scan each of them:
     // \---+

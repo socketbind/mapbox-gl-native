@@ -255,11 +255,11 @@ double TransformState::worldSize() const {
     return scale * util::tileSize;
 }
 
-PrecisionPoint TransformState::latLngToPoint(const LatLng& latLng) const {
+ScreenCoordinate TransformState::latLngToPoint(const LatLng& latLng) const {
     return coordinateToPoint(latLngToCoordinate(latLng));
 }
 
-LatLng TransformState::pointToLatLng(const PrecisionPoint& point) const {
+LatLng TransformState::pointToLatLng(const ScreenCoordinate& point) const {
     return coordinateToLatLng(pointToCoordinate(point));
 }
 
@@ -282,7 +282,7 @@ LatLng TransformState::coordinateToLatLng(const TileID& coord) const {
     return latLng;
 }
 
-PrecisionPoint TransformState::coordinateToPoint(const TileID& coord) const {
+ScreenCoordinate TransformState::coordinateToPoint(const TileID& coord) const {
     mat4 mat = coordinatePointMatrix(coord.z);
     vec4<> p;
     vec4<> c = { coord.x, coord.y, 0, 1 };
@@ -290,7 +290,7 @@ PrecisionPoint TransformState::coordinateToPoint(const TileID& coord) const {
     return { p.x / p.w, height - p.y / p.w };
 }
 
-TileID TransformState::pointToCoordinate(const PrecisionPoint& point) const {
+TileID TransformState::pointToCoordinate(const ScreenCoordinate& point) const {
 
     float targetZ = 0;
     const double tileZoom = getZoom();
@@ -370,7 +370,7 @@ void TransformState::constrain(double& scale_, double& x_, double& y_) const {
     y_ = std::max(-max_y, std::min(y_, max_y));
 }
 
-void TransformState::moveLatLng(const LatLng& latLng, const PrecisionPoint& anchor) {
+void TransformState::moveLatLng(const LatLng& latLng, const ScreenCoordinate& anchor) {
     if (!latLng || !anchor) {
         return;
     }
@@ -399,16 +399,16 @@ void TransformState::setLatLngZoom(const LatLng &latLng, double zoom) {
     const double m = 1 - 1e-15;
     const double f = util::clamp(std::sin(util::DEG2RAD * latLng.latitude), -m, m);
     
-    PrecisionPoint point = {
+    ScreenCoordinate point = {
         -latLng.longitude * Bc,
         0.5 * Cc * std::log((1 + f) / (1 - f)),
     };
     setScalePoint(newScale, point);
 }
 
-void TransformState::setScalePoint(const double newScale, const PrecisionPoint &point) {
+void TransformState::setScalePoint(const double newScale, const ScreenCoordinate &point) {
     double constrainedScale = newScale;
-    PrecisionPoint constrainedPoint = point;
+    ScreenCoordinate constrainedPoint = point;
     constrain(constrainedScale, constrainedPoint.x, constrainedPoint.y);
     
     scale = constrainedScale;

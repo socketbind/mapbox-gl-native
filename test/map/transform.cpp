@@ -131,7 +131,7 @@ TEST(Transform, PerspectiveProjection) {
     ASSERT_NEAR(-76.75823239205641, loc.longitude, 0.0001);
     ASSERT_NEAR(37.692872969426375, loc.latitude, 0.0001);
 
-    PrecisionPoint point = transform.getState().latLngToPoint({38.74661326302018, -77.59198961199148});
+    ScreenCoordinate point = transform.getState().latLngToPoint({38.74661326302018, -77.59198961199148});
     ASSERT_NEAR(point.x, 0, 0.01);
     ASSERT_NEAR(point.y, 1000, 0.01);
 
@@ -193,7 +193,7 @@ TEST(Transform, Anchor) {
     ASSERT_DOUBLE_EQ(10, transform.getZoom());
     ASSERT_DOUBLE_EQ(0, transform.getAngle());
 
-    const PrecisionPoint anchorPoint = {0, 0};
+    const ScreenCoordinate anchorPoint = {0, 0};
     const LatLng anchorLatLng = transform.getState().pointToLatLng(anchorPoint);
     transform.setAngle(M_PI_4, anchorPoint);
 
