@@ -160,7 +160,13 @@ uint64_t OfflineDatabase::putResource(const Resource& resource, const Response& 
         stmt.bind(1, SystemClock::now());
         stmt.bind(2, response.expires);
         stmt.bind(3, resource.url);
-        stmt.run();
+
+        try {
+            stmt.run();
+        } catch (...) {
+            Log::Error(Event::Database, util::toString(std::current_exception()));
+        }
+
         return 0;
     } else {
         mapbox::sqlite::Statement& stmt = getStatement(
