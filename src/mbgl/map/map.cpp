@@ -411,11 +411,11 @@ LatLng Map::latLngForProjectedMeters(const ProjectedMeters& projectedMeters) con
 }
 
 ScreenCoordinate Map::pixelForLatLng(const LatLng& latLng) const {
-    return transform->latLngToPoint(latLng);
+    return transform->latLngToScreenCoordinate(latLng);
 }
 
 LatLng Map::latLngForPixel(const ScreenCoordinate& pixel) const {
-    return transform->pointToLatLng(pixel);
+    return transform->screenCoordinateToLatLng(pixel);
 }
 
 #pragma mark - Annotations

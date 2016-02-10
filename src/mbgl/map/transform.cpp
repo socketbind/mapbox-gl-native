@@ -352,10 +352,10 @@ void Transform::moveBy(const ScreenCoordinate& offset, const Duration& duration)
         offset.x,
         -offset.y,
     };
-    ScreenCoordinate centerPoint = state.latLngToPoint(state.getLatLng()) - centerOffset;
+    ScreenCoordinate centerPoint = state.latLngToScreenCoordinate(state.getLatLng()) - centerOffset;
 
     CameraOptions camera;
-    camera.center = state.pointToLatLng(centerPoint);
+    camera.center = state.screenCoordinateToLatLng(centerPoint);
     easeTo(camera, duration);
 }
 
@@ -413,7 +413,7 @@ void Transform::setLatLngZoom(const LatLng& latLng, double zoom, const EdgeInset
 
 LatLng Transform::getLatLng(const EdgeInsets& padding) const {
     if (padding) {
-        return pointToLatLng(padding.getCenter(state.width, state.height));
+        return screenCoordinateToLatLng(padding.getCenter(state.width, state.height));
     } else {
         return state.getLatLng();
     }
@@ -577,7 +577,7 @@ void Transform::startTransition(const CameraOptions& camera,
     LatLng anchorLatLng;
     if (_validPoint(anchor)) {
         anchor.y = state.getHeight() - anchor.y;
-        anchorLatLng = state.pointToLatLng(anchor);
+        anchorLatLng = state.screenCoordinateToLatLng(anchor);
     }
 
     transitionStart = Clock::now();
@@ -652,14 +652,14 @@ void Transform::setGestureInProgress(bool inProgress) {
 
 #pragma mark Conversion and projection
 
-ScreenCoordinate Transform::latLngToPoint(const LatLng& latLng) const {
-    ScreenCoordinate point = state.latLngToPoint(latLng);
+ScreenCoordinate Transform::latLngToScreenCoordinate(const LatLng& latLng) const {
+    ScreenCoordinate point = state.latLngToScreenCoordinate(latLng);
     point.y = state.height - point.y;
     return point;
 }
 
-LatLng Transform::pointToLatLng(const ScreenCoordinate& point) const {
+LatLng Transform::screenCoordinateToLatLng(const ScreenCoordinate& point) const {
     ScreenCoordinate flippedPoint = point;
     flippedPoint.y = state.height - flippedPoint.y;
-    return state.pointToLatLng(flippedPoint);
+    return state.screenCoordinateToLatLng(flippedPoint);
 }

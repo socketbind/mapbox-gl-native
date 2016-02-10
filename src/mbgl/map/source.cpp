@@ -321,7 +321,7 @@ std::forward_list<TileID> Source::coveringTiles(const TransformState& state) con
 
     // Map four viewport corners to pixel coordinates
     box points = state.cornersToBox(z);
-    const TileID center = state.pointToCoordinate({ state.getWidth() / 2.0f, state.getHeight()/ 2.0f }).zoomTo(z);
+    const TileID center = state.screenCoordinateToTileID({ state.getWidth() / 2.0f, state.getHeight()/ 2.0f }).zoomTo(z);
 
     std::forward_list<TileID> covering_tiles = tileCover(z, points, reparseOverscaled ? actualZ : z);
 

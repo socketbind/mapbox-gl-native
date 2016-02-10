@@ -57,10 +57,10 @@ box TransformState::cornersToBox(uint32_t z) const {
     double w = width;
     double h = height;
     box b(
-    pointToCoordinate({ 0, 0 }).zoomTo(z),
-    pointToCoordinate({ w, 0 }).zoomTo(z),
-    pointToCoordinate({ w, h }).zoomTo(z),
-    pointToCoordinate({ 0, h }).zoomTo(z));
+    screenCoordinateToTileID({ 0, 0 }).zoomTo(z),
+    screenCoordinateToTileID({ w, 0 }).zoomTo(z),
+    screenCoordinateToTileID({ w, h }).zoomTo(z),
+    screenCoordinateToTileID({ 0, h }).zoomTo(z));
     return b;
 }
 
@@ -255,15 +255,15 @@ double TransformState::worldSize() const {
     return scale * util::tileSize;
 }
 
-ScreenCoordinate TransformState::latLngToPoint(const LatLng& latLng) const {
-    return coordinateToPoint(latLngToCoordinate(latLng));
+ScreenCoordinate TransformState::latLngToScreenCoordinate(const LatLng& latLng) const {
+    return tileIDToScreenCoordinate(latLngToTileID(latLng));
 }
 
-LatLng TransformState::pointToLatLng(const ScreenCoordinate& point) const {
-    return coordinateToLatLng(pointToCoordinate(point));
+LatLng TransformState::screenCoordinateToLatLng(const ScreenCoordinate& point) const {
+    return tileIDToLatLng(screenCoordinateToTileID(point));
 }
 
-TileID TransformState::latLngToCoordinate(const LatLng& latLng) const {
+TileID TransformState::latLngToTileID(const LatLng& latLng) const {
     return TileID {
         getZoom(),
         lngX(latLng.longitude) / util::tileSize,
@@ -271,7 +271,7 @@ TileID TransformState::latLngToCoordinate(const LatLng& latLng) const {
     };
 }
 
-LatLng TransformState::coordinateToLatLng(const TileID& coord) const {
+LatLng TransformState::tileIDToLatLng(const TileID& coord) const {
     const double worldSize_ = zoomScale(coord.z);
     LatLng latLng = {
         yLat(coord.y, worldSize_),
@@ -282,7 +282,7 @@ LatLng TransformState::coordinateToLatLng(const TileID& coord) const {
     return latLng;
 }
 
-ScreenCoordinate TransformState::coordinateToPoint(const TileID& coord) const {
+ScreenCoordinate TransformState::tileIDToScreenCoordinate(const TileID& coord) const {
     mat4 mat = coordinatePointMatrix(coord.z);
     vec4<> p;
     vec4<> c = { coord.x, coord.y, 0, 1 };
@@ -290,7 +290,7 @@ ScreenCoordinate TransformState::coordinateToPoint(const TileID& coord) const {
     return { p.x / p.w, height - p.y / p.w };
 }
 
-TileID TransformState::pointToCoordinate(const ScreenCoordinate& point) const {
+TileID TransformState::screenCoordinateToTileID(const ScreenCoordinate& point) const {
 
     float targetZ = 0;
     const double tileZoom = getZoom();
@@ -375,14 +375,14 @@ void TransformState::moveLatLng(const LatLng& latLng, const ScreenCoordinate& an
         return;
     }
     
-    auto coord = latLngToCoordinate(latLng);
-    auto coordAtPoint = pointToCoordinate(anchor);
-    auto coordCenter = pointToCoordinate({ width / 2.0f, height / 2.0f });
+    auto coord = latLngToTileID(latLng);
+    auto coordAtPoint = screenCoordinateToTileID(anchor);
+    auto coordCenter = screenCoordinateToTileID({ width / 2.0f, height / 2.0f });
     
     float columnDiff = coordAtPoint.x - coord.x;
     float rowDiff = coordAtPoint.y - coord.y;
     
-    auto newLatLng = coordinateToLatLng(TileID {
+    auto newLatLng = tileIDToLatLng(TileID {
         coordCenter.z,
         coordCenter.x - columnDiff,
         coordCenter.y - rowDiff,

@@ -10,6 +10,7 @@
 
 namespace mbgl {
 
+// Represents tile z/x/y coordinates.
 class TileID {
 public:
     const int16_t w = 0;

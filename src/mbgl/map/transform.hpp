@@ -136,8 +136,8 @@ public:
     bool isPanning() const { return state.isPanning(); }
     
     // Conversion and projection
-    ScreenCoordinate latLngToPoint(const LatLng&) const;
-    LatLng pointToLatLng(const ScreenCoordinate&) const;
+    ScreenCoordinate latLngToScreenCoordinate(const LatLng&) const;
+    LatLng screenCoordinateToLatLng(const ScreenCoordinate&) const;
 
 private:
     void unwrapLatLng(LatLng&);

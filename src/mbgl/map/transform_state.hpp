@@ -63,14 +63,18 @@ public:
     bool isGestureInProgress() const;
 
     // Conversion and projection
-    ScreenCoordinate latLngToPoint(const LatLng&) const;
-    LatLng pointToLatLng(const ScreenCoordinate&) const;
 
-    TileID latLngToCoordinate(const LatLng&) const;
-    LatLng coordinateToLatLng(const TileID&) const;
+    // Screen pixel coordinates <=> spherical geographic coordinates.
+    ScreenCoordinate latLngToScreenCoordinate(const LatLng&) const;
+    LatLng screenCoordinateToLatLng(const ScreenCoordinate&) const;
 
-    ScreenCoordinate coordinateToPoint(const TileID&) const;
-    TileID pointToCoordinate(const ScreenCoordinate&) const;
+    // Tile z/x/y coordinates <=> spherical geographic coordinates.
+    TileID latLngToTileID(const LatLng&) const;
+    LatLng tileIDToLatLng(const TileID&) const;
+
+    // Screen pixel coordinates <=> tile z/x/y coordinates.
+    ScreenCoordinate tileIDToScreenCoordinate(const TileID&) const;
+    TileID screenCoordinateToTileID(const ScreenCoordinate&) const;
 
 private:
     bool rotatedNorth() const;

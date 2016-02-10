@@ -280,7 +280,7 @@ void Painter::renderBackground(const BackgroundLayer& layer) {
         patternShader->u_opacity = properties.opacity;
 
         LatLng latLng = state.getLatLng();
-        const TileID center = state.latLngToCoordinate(latLng);
+        const TileID center = state.latLngToTileID(latLng);
         float scale = 1 / std::pow(2, zoomFraction);
 
         std::array<float, 2> sizeA = (*imagePosA).size;
