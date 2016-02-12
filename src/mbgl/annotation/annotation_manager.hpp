@@ -40,6 +40,8 @@ public:
     SpriteAtlas& getSpriteAtlas() { return spriteAtlas; }
 
     void updateStyle(Style&);
+    void updateSinglePointAnnotationUsingMonitors(const AnnotationID id);
+    void updateSinglePointAnnotationsUsingMonitors(const std::set<AnnotationID>& ids);
 
     void addTileMonitor(AnnotationTileMonitor&);
     void removeTileMonitor(AnnotationTileMonitor&);

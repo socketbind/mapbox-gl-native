@@ -156,6 +156,26 @@ void AnnotationManager::updateStyle(Style& style) {
     }
 }
 
+void AnnotationManager::updateSinglePointAnnotationUsingMonitors(const AnnotationID id) {
+    auto foundAnnotation = pointAnnotations.find(id);
+    if (foundAnnotation != pointAnnotations.end()) {
+        for (auto& monitor : monitors) {
+            LatLngBounds tileBounds(monitor->tileID);
+
+            if (tileBounds.contains(foundAnnotation->second->point.position)) {
+                monitor->update(getTile(monitor->tileID));
+                return;
+            }
+        }
+    }
+}
+
+void AnnotationManager::updateSinglePointAnnotationsUsingMonitors(const std::set<AnnotationID>& ids) {
+    for (auto id : ids) {
+        updateSinglePointAnnotationUsingMonitors(id);
+    }
+}
+
 void AnnotationManager::addTileMonitor(AnnotationTileMonitor& monitor) {
     monitors.insert(&monitor);
     monitor.update(getTile(monitor.tileID));
