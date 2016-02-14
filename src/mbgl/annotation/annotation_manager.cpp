@@ -48,7 +48,7 @@ AnnotationManager::addShapeAnnotations(const std::vector<ShapeAnnotation>& shape
     return annotationIDs;
 }
 
-AnnotationID
+void
 AnnotationManager::updatePointAnnotation(const AnnotationID id, const PointAnnotation& point) {
     auto foundAnnotation = pointAnnotations.find(id);
     if (foundAnnotation != pointAnnotations.end()) {
@@ -59,21 +59,13 @@ AnnotationManager::updatePointAnnotation(const AnnotationID id, const PointAnnot
         pointTree.insert(updatedAnnotation);
         foundAnnotation->second = updatedAnnotation;
     }
-
-    return id;
 }
 
-AnnotationIDs
+void
 AnnotationManager::updatePointAnnotations(const std::map<AnnotationID, PointAnnotation>& annotations) {
-    AnnotationIDs ids;
-    ids.reserve(annotations.size());
-
     for (auto const& entry : annotations) {
         updatePointAnnotation(entry.first, entry.second);
-        ids.push_back(entry.first);
     }
-
-    return ids;
 }
 
 void AnnotationManager::removeAnnotations(const AnnotationIDs& ids) {
@@ -169,26 +161,6 @@ void AnnotationManager::updateStyle(Style& style) {
 
     for (auto& monitor : monitors) {
         monitor->update(getTile(monitor->tileID));
-    }
-}
-
-void AnnotationManager::updateSinglePointAnnotationUsingMonitors(const AnnotationID id) {
-    auto foundAnnotation = pointAnnotations.find(id);
-    if (foundAnnotation != pointAnnotations.end()) {
-        for (auto& monitor : monitors) {
-            LatLngBounds tileBounds(monitor->tileID);
-
-            if (tileBounds.contains(foundAnnotation->second->point.position)) {
-                monitor->update(getTile(monitor->tileID));
-                return;
-            }
-        }
-    }
-}
-
-void AnnotationManager::updateSinglePointAnnotationsUsingMonitors(const std::set<AnnotationID>& ids) {
-    for (auto id : ids) {
-        updateSinglePointAnnotationUsingMonitors(id);
     }
 }
 

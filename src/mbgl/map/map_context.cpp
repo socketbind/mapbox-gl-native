@@ -33,7 +33,6 @@ MapContext::MapContext(View& view_, FileSource& fileSource, MapMode mode_, GLCon
       data(*dataPtr),
       asyncUpdate([this] { update(); }),
       asyncInvalidate([&view_] { view_.invalidate(); }),
-      asyncUpdatePendingPointAnnotations([this] { updatePendingPointAnnotations(); }),
       texturePool(std::make_unique<TexturePool>()) {
     assert(util::ThreadContext::currentlyOn(util::ThreadType::Map));
 
@@ -85,18 +84,6 @@ void MapContext::triggerUpdate(const TransformState& state, const Update flags) 
     updateFlags |= flags;
 
     asyncUpdate.send();
-}
-
-void MapContext::triggerPointAnnotationUpdate(const AnnotationID id) {
-    pendingUpdatePointAnnotationIds.insert(id);
-
-    asyncUpdatePendingPointAnnotations.send();
-}
-
-void MapContext::triggerPointAnnotationUpdates(const AnnotationIDs& ids) {
-    pendingUpdatePointAnnotationIds.insert(ids.begin(), ids.end());
-
-    asyncUpdatePendingPointAnnotations.send();
 }
 
 void MapContext::setStyleURL(const std::string& url) {
@@ -203,23 +190,6 @@ void MapContext::update() {
     }
 
     updateFlags = Update::Nothing;
-}
-
-void MapContext::updatePendingPointAnnotations() {
-    assert(util::ThreadContext::currentlyOn(util::ThreadType::Map));
-
-    if (!style || (data.mode == MapMode::Still && !callback)) {
-        return;
-    }
-
-    data.getAnnotationManager()->updateSinglePointAnnotationsUsingMonitors(pendingUpdatePointAnnotationIds);
-    pendingUpdatePointAnnotationIds.clear();
-
-    if (data.mode == MapMode::Continuous) {
-        asyncInvalidate.send();
-    } else if (callback && style->isLoaded()) {
-        renderSync(transformState, frameData);
-    }
 }
 
 void MapContext::renderStill(const TransformState& state, const FrameData& frame, Map::StillImageCallback fn) {

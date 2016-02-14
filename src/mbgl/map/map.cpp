@@ -448,12 +448,12 @@ AnnotationIDs Map::addShapeAnnotations(const std::vector<ShapeAnnotation>& annot
 
 void Map::updatePointAnnotation(AnnotationID annotationId, const PointAnnotation& annotation) {
     data->getAnnotationManager()->updatePointAnnotation(annotationId, annotation);
-    context->invoke(&MapContext::triggerPointAnnotationUpdate, annotationId);
+    update(Update::Annotations);
 }
 
 void Map::updatePointAnnotations(const std::map<AnnotationID, PointAnnotation>& annotations) {
-    auto ids = data->getAnnotationManager()->updatePointAnnotations(annotations);
-    context->invoke(&MapContext::triggerPointAnnotationUpdates, ids);
+    data->getAnnotationManager()->updatePointAnnotations(annotations);
+    update(Update::Annotations);
 }
 
 void Map::removeAnnotation(AnnotationID annotation) {

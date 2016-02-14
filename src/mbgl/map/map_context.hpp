@@ -37,9 +37,6 @@ public:
     void pause();
 
     void triggerUpdate(const TransformState&, Update = Update::Nothing);
-    void triggerPointAnnotationUpdate(const AnnotationID id);
-    void triggerPointAnnotationUpdates(const AnnotationIDs& ids);
-
     void renderStill(const TransformState&, const FrameData&, Map::StillImageCallback callback);
 
     // Triggers a synchronous render. Returns true if style has been fully loaded.
@@ -75,7 +72,6 @@ private:
 
     // Update the state indicated by the accumulated Update flags, then render.
     void update();
-    void updatePendingPointAnnotations();
 
     // Loads the actual JSON object an creates a new Style object.
     void loadStyleJSON(const std::string& json, const std::string& base);
@@ -89,9 +85,6 @@ private:
     Update updateFlags = Update::Nothing;
     util::AsyncTask asyncUpdate;
     util::AsyncTask asyncInvalidate;
-    util::AsyncTask asyncUpdatePendingPointAnnotations;
-
-    std::set<AnnotationID> pendingUpdatePointAnnotationIds;
 
     std::unique_ptr<TexturePool> texturePool;
     std::unique_ptr<Painter> painter;
