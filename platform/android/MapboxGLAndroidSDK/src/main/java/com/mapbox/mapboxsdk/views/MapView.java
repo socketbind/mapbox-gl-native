@@ -33,6 +33,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresPermission;
 import android.support.annotation.UiThread;
+import android.support.v4.util.LongSparseArray;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ScaleGestureDetectorCompat;
 import android.support.v7.app.AlertDialog;
@@ -238,7 +239,7 @@ public final class MapView extends FrameLayout {
 
     // Used for displaying annotations
     // Every annotation that has been added to the map
-    private final Map<Long, Annotation> mAnnotations = new HashMap<>();
+    private final LongSparseArray<Annotation> mAnnotations = new LongSparseArray<>();
     private List<Marker> mMarkersNearLastTap = new ArrayList<>();
     private List<Marker> mSelectedMarkers = new ArrayList<>();
     private List<InfoWindow> mInfoWindows = new ArrayList<>();
@@ -2498,8 +2499,9 @@ public final class MapView extends FrameLayout {
         ensureIconLoaded(updatedMarker);
         mNativeMapView.updateMarker(updatedMarker);
 
-        if (mAnnotations.containsKey(updatedMarker.getId())) {
-            mAnnotations.put(updatedMarker.getId(), updatedMarker);
+        int index = mAnnotations.indexOfKey(updatedMarker.getId());
+        if (index > -1) {
+            mAnnotations.setValueAt(index, updatedMarker);
         }
     }
 
@@ -2536,8 +2538,9 @@ public final class MapView extends FrameLayout {
         mNativeMapView.updateMarkers(validMarkers);
 
         for (Marker updatedMarker : validMarkers) {
-            if (mAnnotations.containsKey(updatedMarker.getId())) {
-                mAnnotations.put(updatedMarker.getId(), updatedMarker);
+            int index = mAnnotations.indexOfKey(updatedMarker.getId());
+            if (index > -1) {
+                mAnnotations.setValueAt(index, updatedMarker);
             }
         }
     }
@@ -2766,7 +2769,7 @@ public final class MapView extends FrameLayout {
         }
         long id = annotation.getId();
         mNativeMapView.removeAnnotation(id);
-        mAnnotations.remove(annotation);
+        mAnnotations.delete(id);
     }
 
     /**
@@ -2818,7 +2821,13 @@ public final class MapView extends FrameLayout {
      */
     @NonNull
     public List<Annotation> getAllAnnotations() {
-        return new ArrayList<>(mAnnotations.values());
+        List<Annotation> copyOfAnnotations = new ArrayList<>(mAnnotations.size());
+
+        for (int i = 0; i < mAnnotations.size(); i++) {
+            copyOfAnnotations.add(mAnnotations.get(mAnnotations.keyAt(i)));
+        }
+
+        return copyOfAnnotations;
     }
 
     private List<Marker> getMarkersInBounds(@NonNull BoundingBox bbox) {
