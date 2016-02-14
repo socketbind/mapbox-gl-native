@@ -2794,10 +2794,10 @@ public final class MapView extends FrameLayout {
     @UiThread
     public void removeAllAnnotations() {
         int count = mAnnotations.size();
-        long[] ids = new long[mAnnotations.size()];
+        long[] ids = new long[count];
 
         for (int i = 0; i < count; i++) {
-            Annotation annotation = mAnnotations.get(i);
+            Annotation annotation = mAnnotations.valueAt(i);
             long id = annotation.getId();
             ids[i] = id;
             if (annotation instanceof Marker) {
@@ -2820,7 +2820,7 @@ public final class MapView extends FrameLayout {
         List<Annotation> copyOfAnnotations = new ArrayList<>(mAnnotations.size());
 
         for (int i = 0; i < mAnnotations.size(); i++) {
-            copyOfAnnotations.add(mAnnotations.get(mAnnotations.keyAt(i)));
+            copyOfAnnotations.add(mAnnotations.valueAt(i));
         }
 
         return copyOfAnnotations;
@@ -2843,7 +2843,7 @@ public final class MapView extends FrameLayout {
         List<Marker> annotations = new ArrayList<>(ids.length);
         int count = mAnnotations.size();
         for (int i = 0; i < count; i++) {
-            Annotation annotation = mAnnotations.get(i);
+            Annotation annotation = mAnnotations.valueAt(i);
             if (annotation instanceof Marker && idsList.contains(annotation.getId())) {
                 annotations.add((Marker) annotation);
             }
@@ -3085,7 +3085,7 @@ public final class MapView extends FrameLayout {
     private void adjustTopOffsetPixels() {
         int count = mAnnotations.size();
         for (int i = 0; i < count; i++) {
-            Annotation annotation = mAnnotations.get(i);
+            Annotation annotation = mAnnotations.valueAt(i);
             if (annotation instanceof Marker) {
                 Marker marker = (Marker) annotation;
                 marker.setTopOffsetPixels(
@@ -3104,7 +3104,7 @@ public final class MapView extends FrameLayout {
     private void reloadMarkers() {
         int count = mAnnotations.size();
         for (int i = 0; i < count; i++) {
-            Annotation annotation = mAnnotations.get(i);
+            Annotation annotation = mAnnotations.valueAt(i);
             if (annotation instanceof Marker) {
                 Marker marker = (Marker) annotation;
                 mNativeMapView.removeAnnotation(annotation.getId());
@@ -3430,7 +3430,7 @@ public final class MapView extends FrameLayout {
             if (newSelectedMarkerId >= 0) {
                 int count = mAnnotations.size();
                 for (int i = 0; i < count; i++) {
-                    Annotation annotation = mAnnotations.get(i);
+                    Annotation annotation = mAnnotations.valueAt(i);
                     if (annotation instanceof Marker) {
                         if (annotation.getId() == newSelectedMarkerId) {
                             if (mSelectedMarkers.isEmpty() || !mSelectedMarkers.contains(annotation)) {
