@@ -94,10 +94,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -240,7 +238,6 @@ public final class MapView extends FrameLayout {
     // Used for displaying annotations
     // Every annotation that has been added to the map
     private final LongSparseArray<Annotation> mAnnotations = new LongSparseArray<>();
-    private List<Marker> mMarkersNearLastTap = new ArrayList<>();
     private List<Marker> mSelectedMarkers = new ArrayList<>();
     private List<InfoWindow> mInfoWindows = new ArrayList<>();
     private InfoWindowAdapter mInfoWindowAdapter;
@@ -1872,7 +1869,6 @@ public final class MapView extends FrameLayout {
 
         // Register callbacks early enough
         if (callback != null) {
-            final MapView view = this;
             addOnMapChangedListener(new OnMapChangedListener() {
                 @Override
                 public void onMapChanged(@MapChange int change) {
@@ -3429,7 +3425,6 @@ public final class MapView extends FrameLayout {
                         break;
                     }
                 }
-                mMarkersNearLastTap = nearbyMarkers;
             }
 
             if (newSelectedMarkerId >= 0) {
