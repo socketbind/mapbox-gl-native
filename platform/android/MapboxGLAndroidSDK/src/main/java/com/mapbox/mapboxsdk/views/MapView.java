@@ -2520,25 +2520,17 @@ public final class MapView extends FrameLayout {
             return;
         }
 
-        List<Marker> validMarkers = new ArrayList<>();
-
         for (Marker updatedMarker : updatedMarkers) {
+            ensureIconLoaded(updatedMarker);
             if (updatedMarker.getId() != -1) {
-                ensureIconLoaded(updatedMarker);
-                validMarkers.add(updatedMarker);
-            } else {
-                Log.w(TAG, "one of the markers has an id of -1, possibly was not added yet, skipping");
+                int index = mAnnotations.indexOfKey(updatedMarker.getId());
+                if (index > -1) {
+                    mAnnotations.setValueAt(index, updatedMarker);
+                }
             }
         }
 
-        mNativeMapView.updateMarkers(validMarkers);
-
-        for (Marker updatedMarker : validMarkers) {
-            int index = mAnnotations.indexOfKey(updatedMarker.getId());
-            if (index > -1) {
-                mAnnotations.setValueAt(index, updatedMarker);
-            }
-        }
+        mNativeMapView.updateMarkers(updatedMarkers);
     }
 
     @UiThread
@@ -2579,7 +2571,6 @@ public final class MapView extends FrameLayout {
     private void commitMarkerUpdates() {
         if (!updatedMarkerSet.isEmpty()) {
             updateMultipleMarkers(new ArrayList<>(updatedMarkerSet));
-            Log.d(TAG, "Committed " + updatedMarkerSet.size() + " update(s)");
             updatedMarkerSet.clear();
         }
     }
