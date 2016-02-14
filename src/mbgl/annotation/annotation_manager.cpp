@@ -48,7 +48,8 @@ AnnotationManager::addShapeAnnotations(const std::vector<ShapeAnnotation>& shape
     return annotationIDs;
 }
 
-void AnnotationManager::updatePointAnnotation(const AnnotationID id, const PointAnnotation& point, const uint8_t) {
+AnnotationID
+AnnotationManager::updatePointAnnotation(const AnnotationID id, const PointAnnotation& point) {
     auto foundAnnotation = pointAnnotations.find(id);
     if (foundAnnotation != pointAnnotations.end()) {
         pointTree.remove(pointAnnotations.at(id));
@@ -58,6 +59,21 @@ void AnnotationManager::updatePointAnnotation(const AnnotationID id, const Point
         pointTree.insert(updatedAnnotation);
         foundAnnotation->second = updatedAnnotation;
     }
+
+    return id;
+}
+
+AnnotationIDs
+AnnotationManager::updatePointAnnotations(const std::map<AnnotationID, PointAnnotation>& annotations) {
+    AnnotationIDs ids;
+    ids.reserve(annotations.size());
+
+    for (auto const& entry : annotations) {
+        updatePointAnnotation(entry.first, entry.second);
+        ids.push_back(entry.first);
+    }
+
+    return ids;
 }
 
 void AnnotationManager::removeAnnotations(const AnnotationIDs& ids) {

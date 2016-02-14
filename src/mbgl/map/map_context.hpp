@@ -38,6 +38,7 @@ public:
 
     void triggerUpdate(const TransformState&, Update = Update::Nothing);
     void triggerPointAnnotationUpdate(const AnnotationID id);
+    void triggerPointAnnotationUpdates(const AnnotationIDs& ids);
 
     void renderStill(const TransformState&, const FrameData&, Map::StillImageCallback callback);
 

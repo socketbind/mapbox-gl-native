@@ -7,14 +7,12 @@
 #include <codecvt>
 #include <array>
 #include <vector>
+#include <map>
 
 #include <jni.h>
 
 #include <android/native_window_jni.h>
 #include <sys/system_properties.h>
-
-#include "jni.hpp"
-#include "native_map_view.hpp"
 
 #include <mbgl/map/map.hpp>
 #include <mbgl/map/camera.hpp>
@@ -909,6 +907,91 @@ void JNICALL nativeUpdateMarker(JNIEnv *env, jobject obj, jlong nativeMapViewPtr
 
     // Because Java only has int, not unsigned int, we need to bump the annotation id up to a long.
     nativeMapView->getMap().updatePointAnnotation(markerId, mbgl::PointAnnotation(mbgl::LatLng(latitude, longitude), iconId));
+}
+
+void JNICALL nativeUpdateMarkers(JNIEnv *env, jobject obj, jlong nativeMapViewPtr, jobject jlist) {
+    mbgl::Log::Debug(mbgl::Event::JNI, "nativeUpdateMarkers");
+    assert(nativeMapViewPtr != 0);
+    NativeMapView *nativeMapView = reinterpret_cast<NativeMapView *>(nativeMapViewPtr);
+
+    std::map<mbgl::AnnotationID, mbgl::PointAnnotation> markers;
+
+    if (jlist == nullptr) {
+        if (env->ThrowNew(nullPointerExceptionClass, "List cannot be null.") < 0) {
+            env->ExceptionDescribe();
+            return;
+        }
+        return;
+    }
+
+    jobjectArray jarray =
+        reinterpret_cast<jobjectArray>(env->CallObjectMethod(jlist, listToArrayId));
+    if (env->ExceptionCheck() || (jarray == nullptr)) {
+        env->ExceptionDescribe();
+        return;
+    }
+
+    jsize len = env->GetArrayLength(jarray);
+    if (len < 0) {
+        env->ExceptionDescribe();
+        return;
+    }
+
+    for (jsize i = 0; i < len; i++) {
+        jobject marker = reinterpret_cast<jobject>(env->GetObjectArrayElement(jarray, i));
+
+        jlong javaMarkerId = env->GetLongField(marker, markerIdId);
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+        }
+
+        if (javaMarkerId == -1) {
+            env->DeleteLocalRef(marker);
+            continue;
+        }
+
+        mbgl::AnnotationID markerId = static_cast<uint32_t>(javaMarkerId);
+
+        jobject position = env->GetObjectField(marker, markerPositionId);
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+            env->DeleteLocalRef(marker);
+            return;
+        }
+
+        jobject icon = env->GetObjectField(marker, markerIconId);
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+            env->DeleteLocalRef(marker);
+            return;
+        }
+        env->DeleteLocalRef(marker);
+
+        jstring jid = reinterpret_cast<jstring>(env->GetObjectField(icon, iconIdId));
+        env->DeleteLocalRef(icon);
+
+        std::string iconId = std_string_from_jstring(env, jid);
+        env->DeleteLocalRef(jid);
+
+        jdouble latitude = env->GetDoubleField(position, latLngLatitudeId);
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+            return;
+        }
+
+        jdouble longitude = env->GetDoubleField(position, latLngLongitudeId);
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+            return;
+        }
+        env->DeleteLocalRef(position);
+
+        markers.emplace(markerId, mbgl::PointAnnotation(mbgl::LatLng(latitude, longitude), iconId));
+     }
+
+    env->DeleteLocalRef(jarray);
+
+    nativeMapView->getMap().updatePointAnnotations(markers);
 }
 
 jlongArray JNICALL nativeAddMarkers(JNIEnv *env, jobject obj, jlong nativeMapViewPtr, jobject jlist) {
@@ -2161,6 +2244,8 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
          reinterpret_cast<void *>(&nativeAddPolygons)},
         {"nativeUpdateMarker", "(JLcom/mapbox/mapboxsdk/annotations/Marker;)V",
         reinterpret_cast<void *>(&nativeUpdateMarker)} ,
+        {"nativeUpdateMarkers", "(JLjava/util/List;)V",
+                reinterpret_cast<void *>(&nativeUpdateMarkers)} ,
         {"nativeRemoveAnnotation", "(JJ)V", reinterpret_cast<void *>(&nativeRemoveAnnotation)},
         {"nativeRemoveAnnotations", "(J[J)V", reinterpret_cast<void *>(&nativeRemoveAnnotations)},
         {"nativeGetAnnotationsInBounds", "(JLcom/mapbox/mapboxsdk/geometry/BoundingBox;)[J",

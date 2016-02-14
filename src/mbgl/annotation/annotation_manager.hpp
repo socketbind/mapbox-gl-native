@@ -28,7 +28,8 @@ public:
 
     AnnotationIDs addPointAnnotations(const std::vector<PointAnnotation>&, const uint8_t maxZoom);
     AnnotationIDs addShapeAnnotations(const std::vector<ShapeAnnotation>&, const uint8_t maxZoom);
-    void updatePointAnnotation(const AnnotationID id, const PointAnnotation&, const uint8_t maxZoom);
+    AnnotationID updatePointAnnotation(const AnnotationID id, const PointAnnotation&);
+    AnnotationIDs updatePointAnnotations(const std::map<AnnotationID, PointAnnotation>& annotations);
     void removeAnnotations(const AnnotationIDs&);
 
     AnnotationIDs getPointAnnotationsInBounds(const LatLngBounds&) const;

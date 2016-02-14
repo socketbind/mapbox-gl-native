@@ -3,6 +3,7 @@ package com.mapbox.mapboxsdk.views;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.view.Surface;
+
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.Polygon;
 import com.mapbox.mapboxsdk.annotations.Polyline;
@@ -11,6 +12,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngZoom;
 import com.mapbox.mapboxsdk.geometry.ProjectedMeters;
 import com.mapbox.mapboxsdk.layers.CustomLayer;
+
 import java.lang.ref.WeakReference;
 import java.util.List;
 
@@ -388,6 +390,10 @@ final class NativeMapView {
         nativeUpdateMarker(mNativeMapViewPtr, marker);
     }
 
+    public void updateMarkers(List<Marker> markers) {
+        nativeUpdateMarkers(mNativeMapViewPtr, markers);
+    }
+
     public void removeAnnotation(long id) {
         nativeRemoveAnnotation(mNativeMapViewPtr, id);
     }
@@ -614,6 +620,8 @@ final class NativeMapView {
     private native long nativeAddMarker(long nativeMapViewPtr, Marker marker);
 
     private native void nativeUpdateMarker(long nativeMapViewPtr, Marker marker);
+
+    private native void nativeUpdateMarkers(long nativeMapViewPtr, List<Marker> marker);
 
     private native long[] nativeAddMarkers(long nativeMapViewPtr, List<Marker> markers);
 

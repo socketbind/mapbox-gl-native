@@ -93,6 +93,12 @@ void MapContext::triggerPointAnnotationUpdate(const AnnotationID id) {
     asyncUpdatePendingPointAnnotations.send();
 }
 
+void MapContext::triggerPointAnnotationUpdates(const AnnotationIDs& ids) {
+    pendingUpdatePointAnnotationIds.insert(ids.begin(), ids.end());
+
+    asyncUpdatePendingPointAnnotations.send();
+}
+
 void MapContext::setStyleURL(const std::string& url) {
     if (styleURL == url) {
         return;

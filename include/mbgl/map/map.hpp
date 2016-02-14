@@ -15,6 +15,7 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <map>
 #include <memory>
 
 namespace mbgl {
@@ -163,6 +164,7 @@ public:
     AnnotationIDs addShapeAnnotations(const std::vector<ShapeAnnotation>&);
 
     void updatePointAnnotation(AnnotationID, const PointAnnotation&);
+    void updatePointAnnotations(const std::map<AnnotationID, PointAnnotation>&);
 
     void removeAnnotation(AnnotationID);
     void removeAnnotations(const AnnotationIDs&);

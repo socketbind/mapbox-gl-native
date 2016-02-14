@@ -23,6 +23,8 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.CallSuper;
 import android.support.annotation.FloatRange;
 import android.support.annotation.IntDef;
@@ -60,6 +62,7 @@ import com.almeros.android.multitouch.gesturedetectors.TwoFingerGestureDetector;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.annotations.Annotation;
 import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.InfoWindow;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
@@ -67,7 +70,6 @@ import com.mapbox.mapboxsdk.annotations.Polygon;
 import com.mapbox.mapboxsdk.annotations.PolygonOptions;
 import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
-import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -92,8 +94,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -287,6 +291,20 @@ public final class MapView extends FrameLayout {
     private int mContentPaddingRight;
     private int mContentPaddingBottom;
 */
+
+    // Fields for batched updates
+    private boolean batchUpdateEnabled = false;
+    private long batchUpdateIntervalInMillis;
+    private Set<Marker> updatedMarkerSet = new HashSet<>();
+    private Runnable commitBatchUpdatesRunnable = new Runnable() {
+        @Override
+        public void run() {
+            commitMarkerUpdates();
+            mainThreadHandler.postDelayed(this, batchUpdateIntervalInMillis);
+        }
+    };
+
+    private Handler mainThreadHandler;
 
     //
     // Inner classes
@@ -928,6 +946,8 @@ public final class MapView extends FrameLayout {
      */
     @UiThread
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        mainThreadHandler = new Handler(Looper.getMainLooper());
+
         if (savedInstanceState != null) {
             setLatLng((LatLng) savedInstanceState.getParcelable(STATE_CENTER_LATLNG));
             // need to set zoom level first because of limitation on rotating when zoomed out
@@ -1072,6 +1092,8 @@ public final class MapView extends FrameLayout {
      */
     @UiThread
     public void onDestroy() {
+        disableBatchUpdates();
+
         mNativeMapView.terminateContext();
         mNativeMapView.terminateDisplay();
         mNativeMapView.destroySurface();
@@ -1106,6 +1128,8 @@ public final class MapView extends FrameLayout {
 
         mUserLocationView.pause();
         mNativeMapView.pause();
+
+        pauseBatchUpdatesWhenNeeded();
     }
 
     /**
@@ -1120,6 +1144,8 @@ public final class MapView extends FrameLayout {
         mNativeMapView.resume();
         mNativeMapView.update();
         mUserLocationView.resume();
+
+        resumeBatchUpdatesWhenNeeded();
     }
 
     /**
@@ -2437,13 +2463,29 @@ public final class MapView extends FrameLayout {
 
     /**
      * <p>
-     * Updates a marker on this map. Does nothing if the marker is already added.
+     * Updates a marker on this map.
      * </p>
      *
      * @param updatedMarker An updated marker object.
      */
     @UiThread
     public void updateMarker(@NonNull Marker updatedMarker) {
+        if (batchUpdateEnabled) {
+            updatedMarkerSet.add(updatedMarker);
+        } else {
+            updateSingleMarker(updatedMarker);
+        }
+    }
+
+    /**
+     * <p>
+     * Updates a single marker on this map.
+     * </p>
+     *
+     * @param updatedMarker An updated marker object.
+     */
+    @UiThread
+    private void updateSingleMarker(@NonNull Marker updatedMarker) {
         if (updatedMarker == null) {
             Log.w(TAG, "marker was null, doing nothing");
             return;
@@ -2458,6 +2500,88 @@ public final class MapView extends FrameLayout {
 
         if (mAnnotations.containsKey(updatedMarker.getId())) {
             mAnnotations.put(updatedMarker.getId(), updatedMarker);
+        }
+    }
+
+    /**
+     * <p>
+     * Updates markers on this map.
+     * </p>
+     *
+     * @param updatedMarkers List of updated marker objects.
+     */
+    @UiThread
+    private void updateMultipleMarkers(@NonNull List<Marker> updatedMarkers) {
+        if (updatedMarkers == null) {
+            Log.w(TAG, "markers were null, doing nothing");
+            return;
+        }
+
+        if (updatedMarkers.isEmpty()) {
+            Log.w(TAG, "markers is empty, doing nothing");
+            return;
+        }
+
+        List<Marker> validMarkers = new ArrayList<>();
+
+        for (Marker updatedMarker : updatedMarkers) {
+            if (updatedMarker.getId() != -1) {
+                ensureIconLoaded(updatedMarker);
+                validMarkers.add(updatedMarker);
+            } else {
+                Log.w(TAG, "one of the markers has an id of -1, possibly was not added yet, skipping");
+            }
+        }
+
+        mNativeMapView.updateMarkers(validMarkers);
+
+        for (Marker updatedMarker : validMarkers) {
+            if (mAnnotations.containsKey(updatedMarker.getId())) {
+                mAnnotations.put(updatedMarker.getId(), updatedMarker);
+            }
+        }
+    }
+
+    @UiThread
+    public void enableBatchUpdates(long intervalInMillis) {
+        disableBatchUpdates();
+
+        this.batchUpdateIntervalInMillis = intervalInMillis;
+
+        batchUpdateEnabled = true;
+
+        mainThreadHandler.postDelayed(commitBatchUpdatesRunnable, batchUpdateIntervalInMillis);
+    }
+
+    @UiThread
+    public void disableBatchUpdates() {
+        if (batchUpdateEnabled) {
+            batchUpdateEnabled = false;
+
+            mainThreadHandler.removeCallbacks(commitBatchUpdatesRunnable);
+
+            commitMarkerUpdates();
+        }
+    }
+
+    public void pauseBatchUpdatesWhenNeeded() {
+        if (batchUpdateEnabled) {
+            mainThreadHandler.removeCallbacks(commitBatchUpdatesRunnable);
+        }
+    }
+
+    public void resumeBatchUpdatesWhenNeeded() {
+        if (batchUpdateEnabled) {
+            mainThreadHandler.postDelayed(commitBatchUpdatesRunnable, batchUpdateIntervalInMillis);
+        }
+    }
+
+    @UiThread
+    private void commitMarkerUpdates() {
+        if (!updatedMarkerSet.isEmpty()) {
+            updateMultipleMarkers(new ArrayList<>(updatedMarkerSet));
+            Log.d(TAG, "Committed " + updatedMarkerSet.size() + " update(s)");
+            updatedMarkerSet.clear();
         }
     }
 
